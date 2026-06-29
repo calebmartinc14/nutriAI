@@ -12,7 +12,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
-const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-1.5-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
 const DEMO_MODE = !GEMINI_API_KEY;
 
 // ---------------------------------------------------------------------------
@@ -29,6 +29,16 @@ Reglas:
 - Devuelve EXCLUSIVAMENTE un objeto JSON valido, sin texto adicional ni markdown.
 - "confidence" refleja que tan seguro estas (0.0 a 1.0).
 `.trim();
+
+// Instruccion compartida: el coach puede registrar comidas en el diario.
+const LOG_INSTRUCTIONS = `
+Si el usuario dice que ha comido o bebido algo (ej. "me he comido 2 huevos y una tostada"),
+ademas de tu respuesta normal y breve, anade al FINAL uno o varios bloques EXACTOS
+(uno por alimento o plato) con tus mejores estimaciones de macros de la porcion indicada:
+<<LOG>>{"name":"Nombre corto","slot":"breakfast|lunch|dinner|snacks","calories":N,"protein":N,"carbs":N,"fat":N}<<END>>
+Usa numeros (gramos y kcal). Elige el slot segun la hora del dia si no se especifica.
+No expliques ni muestres el bloque, no uses markdown dentro. Si el usuario NO reporta
+comida, NO incluyas ningun bloque.`.trim();
 
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
@@ -127,7 +137,8 @@ app.post("/api/coach", async (req, res) => {
 Eres "Coach Nutricional IA", cercano y motivador. Respondes en espanol, breve y
 accionable. Usa el contexto de macros del usuario para personalizar consejos,
 sugerir recetas y ajustar el menu. No des consejo medico; recomienda un
-profesional para condiciones de salud. ${contextText}`.trim();
+profesional para condiciones de salud. ${contextText}
+${LOG_INSTRUCTIONS}`.trim();
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
     const geminiRes = await fetch(url, {
@@ -258,6 +269,13 @@ function demoWorkout(days) {
 
 function demoCoachReply(messages) {
   const last = messages.at(-1)?.content?.toLowerCase() ?? "";
+  // Modo demo: detecta que el usuario reporta comida y devuelve un bloque LOG de ejemplo.
+  if (/(comid|comí|comí|cen[eé]|desayun|merend|bebid|me he comido|he comido|tom[eé])/i.test(last)) {
+    return (
+      "¡Anotado! 💪 Buena elección. (Modo demo: macros estimados de ejemplo.)\n" +
+      '<<LOG>>{"name":"Comida del chat","slot":"lunch","calories":420,"protein":28,"carbs":40,"fat":15}<<END>>'
+    );
+  }
   if (last.includes("receta")) {
     return "Modo demo 🍳 Prueba: bowl de quinoa con pollo, garbanzos y aguacate (~520 kcal, 38g proteina). Anade tu clave de Gemini para respuestas reales y personalizadas a tus macros.";
   }

@@ -117,6 +117,8 @@ function profileRow(s) {
     training_days: s.trainingDays ?? 3,
     goals: s.goals ?? null,
     onboarded: s.onboarded ?? false,
+    // Personalización de la rutina (ejercicios propios y ocultos) -> se sincroniza.
+    routine: { custom: s.customExercises ?? {}, hidden: s.hiddenExercises ?? {} },
   };
 }
 
@@ -281,22 +283,26 @@ export const store = {
     s.customExercises[focus] = s.customExercises[focus] ?? [];
     s.customExercises[focus].push({ id: crypto.randomUUID(), name, muscle });
     save(s);
+    emit("profile", "upsert", profileRow(s));
   },
   removeCustomExercise(focus, id) {
     const s = getState();
     s.customExercises[focus] = (s.customExercises[focus] ?? []).filter((c) => c.id !== id);
     save(s);
+    emit("profile", "upsert", profileRow(s));
   },
   hideExercise(focus, name) {
     const s = getState();
     s.hiddenExercises[focus] = s.hiddenExercises[focus] ?? [];
     if (!s.hiddenExercises[focus].includes(name)) s.hiddenExercises[focus].push(name);
     save(s);
+    emit("profile", "upsert", profileRow(s));
   },
   unhideExercise(focus, name) {
     const s = getState();
     s.hiddenExercises[focus] = (s.hiddenExercises[focus] ?? []).filter((n) => n !== name);
     save(s);
+    emit("profile", "upsert", profileRow(s));
   },
 
   // Mejor 1RM estimado (formula de Epley) para un ejercicio.
@@ -446,6 +452,8 @@ export const store = {
       trainingDays: data.trainingDays ?? 3,
       lifts: data.lifts ?? [],
       sessions: data.sessions ?? [],
+      customExercises: data.customExercises ?? {},
+      hiddenExercises: data.hiddenExercises ?? {},
       profile: data.profile ?? null,
       onboarded: data.onboarded ?? false,
       username: data.username ?? null,

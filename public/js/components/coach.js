@@ -1,5 +1,6 @@
-import { store, sumMacros } from "../store.js";
+import { store, sumMacros, SLOTS } from "../store.js";
 import { askCoach } from "../api.js";
+import { toast } from "./ui.js";
 
 // Chat con el Coach Nutricional IA. Mantiene el historial en memoria de sesion
 // y manda el contexto de macros del dia en cada peticion.
@@ -48,7 +49,15 @@ export function renderCoach(root) {
       const context = { consumed: sumMacros(meals), target: store.goals() };
       const reply = await askCoach(history, context);
       typing.remove();
-      history.push({ role: "assistant", content: reply });
+      // Detecta comidas que la IA quiere registrar y las añade al diario.
+      const { text, added } = logMealsFromReply(reply);
+      let finalText = text || "¡Hecho!";
+      if (added.length) {
+        const lines = added.map((m) => `✅ Añadido: ${m.name} · ${m.calories} kcal (P${m.protein} C${m.carbs} G${m.fat})`).join("\n");
+        finalText = (text ? text + "\n\n" : "") + lines;
+        toast(added.length === 1 ? "Comida añadida a tu diario" : `${added.length} comidas añadidas`);
+      }
+      history.push({ role: "assistant", content: finalText });
     } catch (e) {
       typing.remove();
       history.push({ role: "assistant", content: "Ups, no pude responder ahora. Revisa la conexión." });
@@ -66,6 +75,52 @@ export function renderCoach(root) {
       send();
     })
   );
+}
+
+// Extrae bloques <<LOG>>{...}<<END>> de la respuesta, registra las comidas
+// y devuelve el texto limpio (sin los bloques) + las comidas añadidas.
+function logMealsFromReply(reply) {
+  const re = /<<LOG>>([\s\S]*?)<<END>>/g;
+  const added = [];
+  let m;
+  while ((m = re.exec(reply))) {
+    try {
+      const o = JSON.parse(m[1].trim());
+      const meal = {
+        name: String(o.name || "Comida").slice(0, 80),
+        slot: normalizeSlot(o.slot),
+        calories: Math.max(0, Math.round(Number(o.calories) || 0)),
+        protein: Math.max(0, Math.round(Number(o.protein) || 0)),
+        carbs: Math.max(0, Math.round(Number(o.carbs) || 0)),
+        fat: Math.max(0, Math.round(Number(o.fat) || 0)),
+        source: "ai",
+      };
+      store.addMeal(meal);
+      added.push(meal);
+    } catch {
+      /* bloque mal formado: lo ignoramos */
+    }
+  }
+  const text = reply.replace(re, "").trim();
+  return { text, added };
+}
+
+function normalizeSlot(slot) {
+  const s = String(slot || "").toLowerCase();
+  const map = {
+    breakfast: "breakfast", desayuno: "breakfast",
+    lunch: "lunch", almuerzo: "lunch", comida: "lunch",
+    dinner: "dinner", cena: "dinner",
+    snacks: "snacks", snack: "snacks", merienda: "snacks",
+  };
+  if (map[s]) return map[s];
+  if (SLOTS.some((x) => x.id === s)) return s;
+  // Por hora del día como fallback.
+  const h = new Date().getHours();
+  if (h < 11) return "breakfast";
+  if (h < 16) return "lunch";
+  if (h < 21) return "dinner";
+  return "snacks";
 }
 
 function paint(log) {

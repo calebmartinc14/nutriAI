@@ -31,6 +31,8 @@ export async function pullAll(user) {
     goals: p?.goals ?? undefined,
     trainingDays: p?.training_days ?? 3,
     onboarded: p?.onboarded ?? false,
+    customExercises: p?.routine?.custom ?? {},
+    hiddenExercises: p?.routine?.hidden ?? {},
     username,
     meals: (meals.data ?? []).map((m) => ({
       id: m.id, date: m.date, name: m.name, slot: m.slot,
