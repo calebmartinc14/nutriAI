@@ -10,7 +10,7 @@
 //   - "workout"       -> { plan }
 
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")?.trim() ?? "";
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-1.5-flash";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL")?.trim() || "gemini-2.5-flash";
 const DEMO = !GEMINI_API_KEY;
 
 const cors = {
@@ -25,6 +25,13 @@ const json = (body: unknown, status = 200) =>
 const FOOD_PROMPT = `Eres un nutricionista experto en análisis visual de alimentos.
 Analiza la imagen y estima los valores de la porción visible. Si no hay comida, "is_food": false.
 Devuelve SOLO JSON válido sin markdown.`;
+
+// El coach puede registrar comidas que el usuario reporta por chat.
+const LOG_INSTRUCTIONS = `MUY IMPORTANTE: si el usuario dice que ha comido o bebido algo, además de tu respuesta breve
+añade al FINAL uno o varios bloques EXACTOS (uno por alimento) con macros estimados de la porción.
+Escribe cada bloque en UNA SOLA LÍNEA, sin markdown y sin comillas de código:
+<<LOG>>{"name":"Nombre corto","slot":"breakfast|lunch|dinner|snacks","calories":N,"protein":N,"carbs":N,"fat":N}<<END>>
+Usa números (kcal y gramos). Elige slot por la hora si no se indica. NO uses bloques de código (nada de triple comilla). Si el usuario no reporta comida, no incluyas ningún bloque.`;
 
 const FOOD_SCHEMA = {
   type: "OBJECT",
@@ -79,11 +86,17 @@ Deno.serve(async (req) => {
     }
 
     if (action === "coach") {
-      if (DEMO) return json({ reply: "Modo demo 🤖 Añade GEMINI_API_KEY al proyecto para respuestas reales.", demo: true });
+      if (DEMO) {
+        const last = (body.messages?.at(-1)?.content ?? "").toLowerCase();
+        if (/(comid|comí|cen[eé]|desayun|merend|bebid|he comido|tom[eé])/i.test(last)) {
+          return json({ reply: '¡Anotado! 💪 (demo)\n<<LOG>>{"name":"Comida del chat","slot":"lunch","calories":420,"protein":28,"carbs":40,"fat":15}<<END>>', demo: true });
+        }
+        return json({ reply: "Modo demo 🤖 Añade GEMINI_API_KEY al proyecto para respuestas reales.", demo: true });
+      }
       const ctx = body.context
         ? `Contexto: ${body.context.consumed?.calories}/${body.context.target?.calories} kcal hoy.` : "";
       const reply = await gemini(
-        `Eres "Coach Nutricional IA", cercano y conciso, en español. ${ctx}`,
+        `Eres "Coach Nutricional IA", cercano y conciso, en español. ${ctx}\n${LOG_INSTRUCTIONS}`,
         [{ text: (body.messages ?? []).map((m: any) => `${m.role}: ${m.content}`).join("\n") }],
         { temperature: 0.7 },
       );

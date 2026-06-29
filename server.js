@@ -32,13 +32,13 @@ Reglas:
 
 // Instruccion compartida: el coach puede registrar comidas en el diario.
 const LOG_INSTRUCTIONS = `
-Si el usuario dice que ha comido o bebido algo (ej. "me he comido 2 huevos y una tostada"),
+MUY IMPORTANTE: si el usuario dice que ha comido o bebido algo (ej. "me he comido 2 huevos y una tostada"),
 ademas de tu respuesta normal y breve, anade al FINAL uno o varios bloques EXACTOS
-(uno por alimento o plato) con tus mejores estimaciones de macros de la porcion indicada:
+(uno por alimento o plato) con tus mejores estimaciones de macros de la porcion indicada.
+Escribe cada bloque en UNA SOLA LINEA, sin markdown ni comillas de codigo:
 <<LOG>>{"name":"Nombre corto","slot":"breakfast|lunch|dinner|snacks","calories":N,"protein":N,"carbs":N,"fat":N}<<END>>
 Usa numeros (gramos y kcal). Elige el slot segun la hora del dia si no se especifica.
-No expliques ni muestres el bloque, no uses markdown dentro. Si el usuario NO reporta
-comida, NO incluyas ningun bloque.`.trim();
+NO uses bloques de codigo (nada de triple comilla). Si el usuario NO reporta comida, NO incluyas ningun bloque.`.trim();
 
 const RESPONSE_SCHEMA = {
   type: "OBJECT",

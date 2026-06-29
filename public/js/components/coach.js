@@ -77,17 +77,17 @@ export function renderCoach(root) {
   );
 }
 
-// Extrae bloques <<LOG>>{...}<<END>> de la respuesta, registra las comidas
-// y devuelve el texto limpio (sin los bloques) + las comidas añadidas.
+// Extrae comidas de la respuesta de la IA, las registra y devuelve el texto
+// limpio. Tolerante: acepta <<LOG>>{...}<<END>>, JSON suelto, o ```json ... ```.
 function logMealsFromReply(reply) {
-  const re = /<<LOG>>([\s\S]*?)<<END>>/g;
   const added = [];
-  let m;
-  while ((m = re.exec(reply))) {
+
+  const tryAdd = (jsonStr) => {
     try {
-      const o = JSON.parse(m[1].trim());
+      const o = JSON.parse(jsonStr.trim());
+      if (o == null || o.name == null || o.calories == null) return false;
       const meal = {
-        name: String(o.name || "Comida").slice(0, 80),
+        name: String(o.name).slice(0, 80),
         slot: normalizeSlot(o.slot),
         calories: Math.max(0, Math.round(Number(o.calories) || 0)),
         protein: Math.max(0, Math.round(Number(o.protein) || 0)),
@@ -97,12 +97,33 @@ function logMealsFromReply(reply) {
       };
       store.addMeal(meal);
       added.push(meal);
+      return true;
     } catch {
-      /* bloque mal formado: lo ignoramos */
+      return false;
     }
+  };
+
+  // 1) Formato esperado: bloques con marcadores.
+  const marker = /<<LOG>>([\s\S]*?)<<END>>/g;
+  let m;
+  let usedMarkers = false;
+  while ((m = marker.exec(reply))) { usedMarkers = true; tryAdd(m[1]); }
+  if (usedMarkers) {
+    return { text: cleanText(reply.replace(marker, "")), added };
   }
-  const text = reply.replace(re, "").trim();
-  return { text, added };
+
+  // 2) Fallback: cualquier objeto JSON que tenga "name" y "calories".
+  const objRe = /\{[^{}]*"calories"[^{}]*\}/g;
+  let o;
+  let working = reply;
+  while ((o = objRe.exec(reply))) {
+    if (/"name"/.test(o[0]) && tryAdd(o[0])) working = working.replace(o[0], "");
+  }
+  return { text: cleanText(working), added };
+}
+
+function cleanText(t) {
+  return t.replace(/```json|```/g, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function normalizeSlot(slot) {
