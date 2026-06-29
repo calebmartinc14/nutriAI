@@ -51,8 +51,10 @@ function getState() {
     meals: s.meals ?? [],
     weights: s.weights ?? [], // [{ date: "YYYY-MM-DD", kg: number }]
     trainingDays: s.trainingDays ?? 3, // dias de entreno por semana
-    lifts: s.lifts ?? [], // [{ date, exercise, kg, reps }]
+    lifts: s.lifts ?? [], // [{ id, date, exercise, kg, reps }] una fila por SERIE
     sessions: s.sessions ?? [], // [{ date, focus }] entrenos completados
+    customExercises: s.customExercises ?? {}, // { focus: [{id,name,muscle}] }
+    hiddenExercises: s.hiddenExercises ?? {}, // { focus: [name, ...] }
     profile: s.profile ?? null,
     onboarded: s.onboarded ?? false,
     username: s.username ?? null,
@@ -251,13 +253,50 @@ export const store = {
     return this.liftsFor(exercise).at(-1) ?? null;
   },
 
-  deleteLift(exercise, dateKey) {
+  // Todas las series de un ejercicio en un día concreto (para multi-serie).
+  liftsForDay(exercise, dateKey = todayKey()) {
+    return getState().lifts.filter((l) => l.exercise === exercise && l.date === dateKey);
+  },
+
+  deleteLiftById(id) {
     const s = getState();
-    const idx = s.lifts.findIndex((l) => l.exercise === exercise && l.date === dateKey);
+    const idx = s.lifts.findIndex((l) => l.id === id);
     if (idx >= 0) {
       s.lifts.splice(idx, 1);
       save(s);
+      emit("lifts", "delete", { id });
+      pushRankStats();
     }
+  },
+
+  // ---- Personalización de la rutina (local) ----
+  customExercises() {
+    return getState().customExercises;
+  },
+  hiddenExercises() {
+    return getState().hiddenExercises;
+  },
+  addCustomExercise(focus, name, muscle = "") {
+    const s = getState();
+    s.customExercises[focus] = s.customExercises[focus] ?? [];
+    s.customExercises[focus].push({ id: crypto.randomUUID(), name, muscle });
+    save(s);
+  },
+  removeCustomExercise(focus, id) {
+    const s = getState();
+    s.customExercises[focus] = (s.customExercises[focus] ?? []).filter((c) => c.id !== id);
+    save(s);
+  },
+  hideExercise(focus, name) {
+    const s = getState();
+    s.hiddenExercises[focus] = s.hiddenExercises[focus] ?? [];
+    if (!s.hiddenExercises[focus].includes(name)) s.hiddenExercises[focus].push(name);
+    save(s);
+  },
+  unhideExercise(focus, name) {
+    const s = getState();
+    s.hiddenExercises[focus] = (s.hiddenExercises[focus] ?? []).filter((n) => n !== name);
+    save(s);
   },
 
   // Mejor 1RM estimado (formula de Epley) para un ejercicio.
@@ -331,6 +370,8 @@ export const store = {
       trainingDays: obj.trainingDays ?? 3,
       lifts: Array.isArray(obj.lifts) ? obj.lifts : [],
       sessions: Array.isArray(obj.sessions) ? obj.sessions : [],
+      customExercises: obj.customExercises ?? {},
+      hiddenExercises: obj.hiddenExercises ?? {},
       profile: obj.profile ?? null,
       onboarded: obj.onboarded ?? true,
     };

@@ -293,20 +293,37 @@ html, body {
 .wk-done-btn:hover { color: var(--text); }
 .wk-done-btn.done { background: rgba(0,229,168,0.15); border-color: var(--cal); color: var(--cal); }
 
-/* Registro de peso por ejercicio */
+/* Registro de series por ejercicio */
 .wk-ex-wrap { border-bottom: 1px solid var(--stroke); padding-bottom: 8px; }
 .wk-ex-wrap:last-child { border-bottom: none; padding-bottom: 0; }
 .wk-ex { cursor: pointer; }
-.wk-ex-caret { color: var(--cal); font-size: 18px; margin-left: 8px; }
+.wk-ex-caret { color: var(--cal); font-size: 18px; }
 .ranked-dot { color: var(--carbs); font-size: 12px; }
-.wk-ex-log { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-.wk-ex-log input {
+.ex-remove { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 14px; padding: 2px 6px; }
+.ex-remove:hover { color: var(--fat); }
+
+.wk-ex-log { margin-top: 10px; }
+.sets-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.set-item { display: flex; align-items: center; justify-content: space-between; background: var(--surface-2); border-radius: 10px; padding: 8px 12px; font-size: 13px; color: var(--text-2); }
+.set-item b { color: var(--text); }
+.set-del { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 14px; padding: 2px 6px; }
+.set-del:hover { color: var(--fat); }
+.set-add-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.set-add-row input {
   width: 80px; background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 10px;
   padding: 9px 12px; color: var(--text); font-size: 14px; font-family: inherit; outline: none;
 }
-.wk-ex-log input:focus { border-color: var(--cal); }
-.wk-ex-log .lift-save { width: auto; padding: 9px 16px; font-size: 13px; }
-.lift-pr { color: var(--carbs); font-size: 12px; font-weight: 700; }
+.set-add-row input:focus { border-color: var(--cal); }
+.set-add-btn { width: auto; padding: 9px 16px; font-size: 13px; }
+.lift-pr { color: var(--carbs); font-size: 12px; font-weight: 700; margin-top: 10px; }
+
+/* Añadir / personalizar ejercicios */
+.wk-add-ex { margin-top: 12px; width: 100%; background: var(--surface-2); border: 1px dashed var(--stroke); color: var(--cal); border-radius: 12px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
+.wk-add-ex:hover { border-color: var(--cal); }
+.wk-addpanel { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.wk-addpanel input { flex: 1; min-width: 120px; background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 14px; font-family: inherit; outline: none; }
+.wk-addpanel input:focus { border-color: var(--cal); }
+.wk-addpanel .btn { width: auto; padding: 10px 16px; font-size: 13px; }
 
 /* ====================== RANGO ====================== */
 .rank-hero {
@@ -438,28 +455,30 @@ html, body {
   html, body { overflow-x: hidden; }
   .app { flex-direction: column; }
 
-  /* Barra lateral -> barra INFERIOR fija; iconos repartidos por igual */
+  /* Barra lateral -> barra INFERIOR fija con icono + etiqueta, scroll horizontal */
   .sidebar {
     position: fixed; bottom: 0; left: 0; right: 0; top: auto;
     width: 100%; height: auto; z-index: 40;
     flex-direction: row; align-items: stretch;
-    gap: 0; padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
+    gap: 2px; padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
     border-right: none; border-top: 1px solid var(--stroke);
-    overflow: hidden;
+    overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
+  .sidebar::-webkit-scrollbar { display: none; }
   .brand { display: none; }
   #ai-badge { display: none; }
-  /* side-nav (8 items) y side-foot (2 items) reparten el ancho segun nº de items */
-  .side-nav { flex: 8 1 0; display: flex; flex-direction: row; gap: 0; min-width: 0; }
-  .side-foot { flex: 2 1 0; margin: 0; padding: 0; display: flex; flex-direction: row; gap: 0; min-width: 0; }
+  .side-nav { flex: 0 0 auto; display: flex; flex-direction: row; gap: 2px; }
+  .side-foot { flex: 0 0 auto; margin: 0; padding: 0; display: flex; flex-direction: row; gap: 2px; }
 
-  /* Cada item: columna igual, solo icono (la etiqueta de texto se oculta con font-size:0) */
+  /* Cada item: icono arriba + etiqueta pequeña debajo */
   .nav-item {
-    flex: 1 1 0; min-width: 0; width: auto;
-    flex-direction: column; gap: 0;
-    padding: 9px 0; font-size: 0; border-radius: 10px;
+    flex: 0 0 auto; width: auto;
+    flex-direction: column; gap: 2px;
+    padding: 7px 12px; font-size: 10px; font-weight: 600;
+    line-height: 1.1; border-radius: 10px; white-space: nowrap; text-align: center;
   }
-  .nav-item .ni-ico { font-size: 21px; width: auto; }
+  .nav-item .ni-ico { font-size: 20px; width: auto; }
 
   /* Contenido: deja hueco abajo para la barra fija */
   .main { padding-bottom: 78px; }

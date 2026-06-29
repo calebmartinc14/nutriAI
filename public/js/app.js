@@ -20,7 +20,12 @@ let current = "dashboard";
 function navigate(view, params = {}) {
   current = view;
   if (view === "history") resetHistoryWeek();
-  navItems.forEach((t) => t.classList.toggle("active", t.dataset.view === view));
+  navItems.forEach((t) => {
+    const active = t.dataset.view === view;
+    t.classList.toggle("active", active);
+    // En móvil la barra hace scroll: trae la pestaña activa a la vista.
+    if (active) t.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+  });
   render(params);
   window.scrollTo(0, 0);
 }
