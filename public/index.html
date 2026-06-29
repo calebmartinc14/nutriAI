@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0B0E11" />
+  <title>NutriAI — Tracker de macros con IA</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='%2300e5a8' stroke-width='12' stroke-linecap='round' stroke-dasharray='200 264' transform='rotate(-90 50 50)'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar de navegacion (escritorio) -->
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-logo">◎</span>
+        <span class="brand-name">NutriAI</span>
+      </div>
+
+      <nav class="side-nav">
+        <button class="nav-item active" data-view="dashboard"><span class="ni-ico">◎</span> Inicio</button>
+        <button class="nav-item" data-view="scanner"><span class="ni-ico">＋</span> Escanear plato</button>
+        <button class="nav-item" data-view="history"><span class="ni-ico">▤</span> Historial</button>
+        <button class="nav-item" data-view="weight"><span class="ni-ico">⚖</span> Peso</button>
+        <button class="nav-item" data-view="workout"><span class="ni-ico">🏋</span> Entreno</button>
+        <button class="nav-item" data-view="rank"><span class="ni-ico">🏆</span> Rango</button>
+        <button class="nav-item" data-view="league"><span class="ni-ico">⚔</span> Liga</button>
+        <button class="nav-item" data-view="coach"><span class="ni-ico">✦</span> Coach IA</button>
+      </nav>
+
+      <div class="side-foot">
+        <button class="nav-item" id="edit-profile"><span class="ni-ico">⚙</span> Mi perfil</button>
+        <span id="ai-badge" class="badge badge-muted">IA</span>
+      </div>
+    </aside>
+
+    <!-- Contenido principal -->
+    <div class="main">
+      <header class="topbar">
+        <div>
+          <p id="greeting" class="greeting">Hola 👋</p>
+          <h1 id="date-label" class="date-label">Hoy</h1>
+        </div>
+      </header>
+      <main id="view" class="view"></main>
+    </div>
+  </div>
+
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
