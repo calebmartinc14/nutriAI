@@ -435,27 +435,49 @@ html, body {
 
 /* ====================== RESPONSIVE (movil) ====================== */
 @media (max-width: 860px) {
+  html, body { overflow-x: hidden; }
   .app { flex-direction: column; }
+
+  /* Barra lateral -> barra INFERIOR fija; iconos repartidos por igual */
   .sidebar {
-    width: 100%; height: auto; position: sticky; top: 0; z-index: 30; flex-direction: row;
-    align-items: center; padding: 12px 16px; gap: 8px;
+    position: fixed; bottom: 0; left: 0; right: 0; top: auto;
+    width: 100%; height: auto; z-index: 40;
+    flex-direction: row; align-items: stretch;
+    gap: 0; padding: 4px 2px calc(4px + env(safe-area-inset-bottom));
+    border-right: none; border-top: 1px solid var(--stroke);
+    overflow: hidden;
   }
-  .brand { padding: 0; margin-right: auto; }
-  .side-nav { flex-direction: row; }
-  .nav-item span:not(.ni-ico) { display: none; } /* solo iconos en movil */
-  .nav-item { padding: 10px 12px; }
-  .side-foot { margin: 0; flex-direction: row; align-items: center; gap: 8px; padding: 0; }
-  #edit-profile span:not(.ni-ico) { display: none; }
-  .topbar { padding: 18px 20px 4px; }
-  .view { padding: 12px 16px 40px; }
+  .brand { display: none; }
+  #ai-badge { display: none; }
+  /* side-nav (8 items) y side-foot (2 items) reparten el ancho segun nº de items */
+  .side-nav { flex: 8 1 0; display: flex; flex-direction: row; gap: 0; min-width: 0; }
+  .side-foot { flex: 2 1 0; margin: 0; padding: 0; display: flex; flex-direction: row; gap: 0; min-width: 0; }
+
+  /* Cada item: columna igual, solo icono (la etiqueta de texto se oculta con font-size:0) */
+  .nav-item {
+    flex: 1 1 0; min-width: 0; width: auto;
+    flex-direction: column; gap: 0;
+    padding: 9px 0; font-size: 0; border-radius: 10px;
+  }
+  .nav-item .ni-ico { font-size: 21px; width: auto; }
+
+  /* Contenido: deja hueco abajo para la barra fija */
+  .main { padding-bottom: 78px; }
+  .topbar { padding: 16px 18px 4px; }
+  .view { padding: 12px 14px 24px; }
+  .date-label { font-size: 21px; }
+
   .dash-hero { grid-template-columns: 1fr; }
   .meals-grid { grid-template-columns: 1fr; }
   .hist-stats { grid-template-columns: repeat(2, 1fr); }
   .weight-stats { grid-template-columns: repeat(2, 1fr); }
   .wk-days { grid-template-columns: 1fr; }
-  .wk-streak { grid-template-columns: 1fr; }
+  .wk-streak { grid-template-columns: repeat(3, 1fr); }
   .day-macros { display: none; }
-  .date-label { font-size: 22px; }
+
+  .coach { height: calc(100vh - 240px); }
+  .la-row { flex-direction: column; }
+  .la-row .btn { width: 100%; }
 }
 @media (max-width: 460px) {
   .grid-2 { grid-template-columns: 1fr; }
