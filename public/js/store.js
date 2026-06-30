@@ -55,6 +55,29 @@ export function parseLocalDate(key) {
   return new Date(`${key}T00:00:00`);
 }
 
+// Normaliza una rutina al formato por días (migra el formato antiguo de lista plana).
+function normalizeRoutine(r) {
+  if (Array.isArray(r.days)) return r;
+  return {
+    id: r.id,
+    name: r.name,
+    days: [{ id: crypto.randomUUID(), label: "", exercises: r.exercises ?? [] }],
+  };
+}
+
+// Helpers para rutinas por días.
+function findR(s, id) {
+  return s.customRoutines.find((r) => r.id === id);
+}
+function findD(s, rid, did) {
+  const r = findR(s, rid);
+  return r ? r.days.find((d) => d.id === did) : null;
+}
+function saveRoutines(s) {
+  save(s);
+  emit("profile", "upsert", profileRow(s));
+}
+
 function getState() {
   const s = load();
   return {
@@ -66,7 +89,7 @@ function getState() {
     sessions: s.sessions ?? [], // [{ date, focus }] entrenos completados
     customExercises: s.customExercises ?? {}, // { focus: [{id,name,muscle}] }
     hiddenExercises: s.hiddenExercises ?? {}, // { focus: [name, ...] }
-    customRoutines: s.customRoutines ?? [], // [{id,name,exercises:[{name,muscle}]}]
+    customRoutines: (s.customRoutines ?? []).map(normalizeRoutine), // [{id,name,days:[{id,label,exercises}]}]
     hideDefaultRoutine: s.hideDefaultRoutine ?? false,
     lang: s.lang ?? null, // idioma preferido (i18n)
     profile: s.profile ?? null,
@@ -457,31 +480,49 @@ export const store = {
 
   // ---- Rutinas propias ----
   customRoutines() {
-    return getState().customRoutines;
+    return getState().customRoutines.map(normalizeRoutine);
   },
   addRoutine(name) {
     const s = getState();
-    const r = { id: crypto.randomUUID(), name, exercises: [] };
+    const r = { id: crypto.randomUUID(), name, days: [{ id: crypto.randomUUID(), label: "", exercises: [] }] };
     s.customRoutines.push(r);
-    save(s);
-    emit("profile", "upsert", profileRow(s));
+    saveRoutines(s);
     return r;
+  },
+  setRoutineName(routineId, name) {
+    const s = getState();
+    const r = findR(s, routineId);
+    if (r) { r.name = name; saveRoutines(s); }
   },
   deleteRoutine(id) {
     const s = getState();
-    s.customRoutines = s.customRoutines.filter((r) => r.id !== id);
-    save(s);
-    emit("profile", "upsert", profileRow(s));
+    s.customRoutines = s.customRoutines.map(normalizeRoutine).filter((r) => r.id !== id);
+    saveRoutines(s);
   },
-  addExerciseToRoutine(routineId, name, muscle = "") {
+  addRoutineDay(routineId) {
     const s = getState();
-    const r = s.customRoutines.find((x) => x.id === routineId);
-    if (r) { r.exercises.push({ name, muscle }); save(s); emit("profile", "upsert", profileRow(s)); }
+    const r = findR(s, routineId);
+    if (r) { r.days.push({ id: crypto.randomUUID(), label: "", exercises: [] }); saveRoutines(s); }
   },
-  removeExerciseFromRoutine(routineId, idx) {
+  deleteRoutineDay(routineId, dayId) {
     const s = getState();
-    const r = s.customRoutines.find((x) => x.id === routineId);
-    if (r) { r.exercises.splice(idx, 1); save(s); emit("profile", "upsert", profileRow(s)); }
+    const r = findR(s, routineId);
+    if (r) { r.days = r.days.filter((d) => d.id !== dayId); saveRoutines(s); }
+  },
+  setRoutineDayLabel(routineId, dayId, label) {
+    const s = getState();
+    const d = findD(s, routineId, dayId);
+    if (d) { d.label = label; saveRoutines(s); }
+  },
+  addExerciseToRoutineDay(routineId, dayId, name, muscle = "") {
+    const s = getState();
+    const d = findD(s, routineId, dayId);
+    if (d) { d.exercises.push({ name, muscle }); saveRoutines(s); }
+  },
+  removeExerciseFromRoutineDay(routineId, dayId, idx) {
+    const s = getState();
+    const d = findD(s, routineId, dayId);
+    if (d) { d.exercises.splice(idx, 1); saveRoutines(s); }
   },
   hideDefaultRoutine() {
     return getState().hideDefaultRoutine;

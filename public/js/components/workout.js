@@ -1,4 +1,4 @@
-import { store } from "../store.js";
+import { store, parseLocalDate } from "../store.js";
 import { generateWorkout } from "../api.js";
 import { isRanked } from "../lib/ranking.js";
 import { openExerciseExplorer } from "./exercises.js";
@@ -115,6 +115,8 @@ function draw(root) {
 
     ${myRoutinesSection()}
 
+    ${workoutHistorySection()}
+
     <div class="section-title" style="margin-top:24px; display:flex; justify-content:space-between; align-items:center">
       <span>Rutina sugerida</span>
       <button class="wk-toggle-def" id="toggle-def">${hideDef ? "Mostrar" : "Ocultar"}</button>
@@ -201,7 +203,7 @@ function bind(root) {
     })
   );
 
-  // --- Mis rutinas ---
+  // --- Mis rutinas (por días) ---
   root.querySelector("#create-routine")?.addEventListener("click", () => {
     const name = root.querySelector("#new-routine-name").value.trim();
     if (!name) return toast("Ponle un nombre a la rutina");
@@ -209,19 +211,32 @@ function bind(root) {
     toast("Rutina creada 💪");
     draw(root);
   });
+  // Renombrar rutina / etiqueta de día (al perder foco, sin re-render para no perder el cursor)
+  root.querySelectorAll("[data-routinename]").forEach((inp) =>
+    inp.addEventListener("change", () => store.setRoutineName(inp.dataset.routinename, inp.value.trim() || "Rutina"))
+  );
+  root.querySelectorAll("[data-daylabel]").forEach((inp) =>
+    inp.addEventListener("change", () => { const [rid, did] = inp.dataset.daylabel.split("|"); store.setRoutineDayLabel(rid, did, inp.value.trim()); })
+  );
   root.querySelectorAll("[data-delroutine]").forEach((btn) =>
     btn.addEventListener("click", () => { store.deleteRoutine(btn.dataset.delroutine); draw(root); })
   );
-  root.querySelectorAll("[data-addtoroutine]").forEach((btn) =>
+  root.querySelectorAll("[data-addday]").forEach((btn) =>
+    btn.addEventListener("click", () => { store.addRoutineDay(btn.dataset.addday); draw(root); })
+  );
+  root.querySelectorAll("[data-delday]").forEach((btn) =>
+    btn.addEventListener("click", () => { const [rid, did] = btn.dataset.delday.split("|"); store.deleteRoutineDay(rid, did); draw(root); })
+  );
+  root.querySelectorAll("[data-addtoday]").forEach((btn) =>
     btn.addEventListener("click", () => {
-      const id = btn.dataset.addtoroutine;
-      openExerciseExplorer({ onAdd: (name, muscle) => { store.addExerciseToRoutine(id, name, muscle); draw(root); } });
+      const [rid, did] = btn.dataset.addtoday.split("|");
+      openExerciseExplorer({ onAdd: (name, muscle) => { store.addExerciseToRoutineDay(rid, did, name, muscle); draw(root); } });
     })
   );
   root.querySelectorAll("[data-rmrex]").forEach((btn) =>
     btn.addEventListener("click", () => {
-      const [id, idx] = btn.dataset.rmrex.split("|");
-      store.removeExerciseFromRoutine(id, Number(idx));
+      const [rid, did, idx] = btn.dataset.rmrex.split("|");
+      store.removeExerciseFromRoutineDay(rid, did, Number(idx));
       draw(root);
     })
   );
@@ -325,11 +340,9 @@ function myRoutinesSection() {
   const routines = store.customRoutines();
   return `
     <div class="section-title" style="margin-top:8px">Mis rutinas</div>
-    <div class="my-routines">
-      ${routines.length ? routines.map(routineCard).join("") : `<p class="hist-note">Aún no tienes rutinas propias. Créate una con el nombre que quieras 💪</p>`}
-    </div>
+    ${routines.length ? `<div class="my-routines">${routines.map(routineCard).join("")}</div>` : `<p class="hist-note">Aún no tienes rutinas propias. Crea una y organízala por días 💪</p>`}
     <div class="wk-newroutine">
-      <input id="new-routine-name" type="text" placeholder="Nombre (ej. Mi día de pierna rompedora)" />
+      <input id="new-routine-name" type="text" placeholder="Nombre (ej. Push Pull Legs)" />
       <button class="btn btn-primary" id="create-routine">＋ Crear rutina</button>
     </div>`;
 }
@@ -337,15 +350,73 @@ function myRoutinesSection() {
 function routineCard(r) {
   return `
     <div class="card my-routine">
-      <div class="mr-head"><b>${esc(r.name)}</b><button class="ex-remove" data-delroutine="${r.id}" title="Borrar rutina">🗑</button></div>
-      <div class="mr-exs">
-        ${r.exercises.length
-          ? r.exercises.map((e, i) => `<div class="mr-ex"><span>${esc(e.name)}${e.muscle ? ` · <span class="mr-ex-m">${esc(e.muscle)}</span>` : ""}</span><button class="set-del" data-rmrex="${r.id}|${i}" title="Quitar">✕</button></div>`).join("")
-          : `<div class="meal-empty" style="padding-left:0">Sin ejercicios todavía</div>`}
+      <div class="mr-head">
+        <input class="mr-name" type="text" value="${attr(r.name)}" data-routinename="${r.id}" />
+        <button class="ex-remove" data-delroutine="${r.id}" title="Borrar rutina">🗑</button>
       </div>
-      <button class="wk-add-ex" data-addtoroutine="${r.id}">📚 Añadir ejercicio</button>
+      ${r.days.map((d, i) => routineDay(r.id, d, i + 1)).join("")}
+      <button class="wk-add-ex" data-addday="${r.id}">＋ Añadir día</button>
     </div>`;
 }
+
+function routineDay(rid, d, n) {
+  return `
+    <div class="mr-day">
+      <div class="mr-day-head">
+        <span class="mr-day-n">Día ${n}</span>
+        <input class="mr-day-label" type="text" placeholder="Músculo / zona (ej. Pecho y tríceps)" value="${attr(d.label || "")}" data-daylabel="${rid}|${d.id}" />
+        <button class="set-del" data-delday="${rid}|${d.id}" title="Borrar día">✕</button>
+      </div>
+      <div class="mr-exs">
+        ${d.exercises.length
+          ? d.exercises.map((e, i) => `<div class="mr-ex"><span>${esc(e.name)}${e.muscle ? ` · <span class="mr-ex-m">${esc(e.muscle)}</span>` : ""}</span><button class="set-del" data-rmrex="${rid}|${d.id}|${i}" title="Quitar">✕</button></div>`).join("")
+          : `<div class="meal-empty" style="padding-left:0">Sin ejercicios este día</div>`}
+      </div>
+      <button class="wk-add-ex wk-add-small" data-addtoday="${rid}|${d.id}">📚 Añadir ejercicio</button>
+    </div>`;
+}
+
+// Historial de entrenos por día (esta semana / semana pasada / anteriores).
+function workoutHistorySection() {
+  const lifts = store.lifts();
+  if (!lifts.length) return `<div class="section-title" style="margin-top:28px">Historial de entrenos</div><p class="hist-note">Aún no has registrado series. Regístralas en la rutina y aparecerán aquí por día.</p>`;
+
+  // Agrupa por fecha -> ejercicios -> series
+  const byDate = {};
+  for (const l of lifts) {
+    (byDate[l.date] = byDate[l.date] || {});
+    (byDate[l.date][l.exercise] = byDate[l.date][l.exercise] || []).push(`${l.kg}×${l.reps}`);
+  }
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+
+  const mondayOffset = (dt) => { const x = new Date(dt); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+  const thisMon = mondayOffset(new Date());
+  const lastMon = new Date(thisMon); lastMon.setDate(thisMon.getDate() - 7);
+
+  const groups = { "Esta semana": [], "Semana pasada": [], "Anteriores": [] };
+  for (const date of dates) {
+    const d = parseLocalDate(date);
+    if (d >= thisMon) groups["Esta semana"].push(date);
+    else if (d >= lastMon) groups["Semana pasada"].push(date);
+    else groups["Anteriores"].push(date);
+  }
+
+  const fmt = (key) => new Intl.DateTimeFormat("es", { weekday: "long", day: "numeric", month: "short" }).format(parseLocalDate(key));
+  const dayBlock = (date) => `
+    <div class="card wh-day">
+      <div class="wh-date">${cap(fmt(date))}</div>
+      ${Object.entries(byDate[date]).map(([ex, sets]) => `<div class="wh-ex"><span class="wh-ex-name">${esc(ex)}</span><span class="wh-ex-sets">${sets.join(", ")}</span></div>`).join("")}
+    </div>`;
+
+  return `
+    <div class="section-title" style="margin-top:28px">Historial de entrenos</div>
+    ${Object.entries(groups).filter(([, ds]) => ds.length).map(([title, ds]) => `
+      <div class="wh-group-title">${title}</div>
+      ${ds.slice(0, title === "Anteriores" ? 10 : 99).map(dayBlock).join("")}
+    `).join("")}`;
+}
+
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
 function attr(s) { return String(s).replace(/"/g, "&quot;"); }
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
