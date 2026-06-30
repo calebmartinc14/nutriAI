@@ -29,7 +29,7 @@ async function callAI(action, payload) {
   }
 
   // Modo local
-  const route = { "analyze-food": "/api/analyze-food", coach: "/api/coach", workout: "/api/workout", status: "/api/status" }[action];
+  const route = { "analyze-food": "/api/analyze-food", coach: "/api/coach", workout: "/api/workout", status: "/api/status", "product-search": "/api/product-search" }[action];
   const res = await fetch(route, {
     method: action === "status" ? "GET" : "POST",
     headers: { "Content-Type": "application/json" },
@@ -90,4 +90,9 @@ export async function generateWorkout(profile, days) {
 export async function askCoach(messages, context) {
   const data = await callAI("coach", { messages, context });
   return data.reply;
+}
+
+export async function searchProducts(query, hacendado) {
+  const data = await callAI("product-search", { query, hacendado });
+  return data.products || [];
 }

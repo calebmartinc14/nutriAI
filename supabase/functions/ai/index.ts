@@ -69,6 +69,35 @@ Deno.serve(async (req) => {
 
   if (action === "status") return json({ demo: DEMO, model: DEMO ? null : GEMINI_MODEL });
 
+  // Búsqueda de productos en Open Food Facts (proxy: evita CORS, añade User-Agent).
+  // No depende de Gemini, funciona siempre.
+  if (action === "product-search") {
+    try {
+      const params = new URLSearchParams({
+        search_terms: String(body.query || ""), search_simple: "1", action: "process",
+        json: "1", page_size: "30",
+        fields: "code,product_name,brands,image_front_small_url,nutriments",
+      });
+      if (body.hacendado) params.set("brands_tags", "hacendado");
+      const r = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`, {
+        headers: { "User-Agent": "NutriAI/1.0 (app de nutrición)" },
+      });
+      if (!r.ok) return json({ error: "Open Food Facts no disponible" }, 502);
+      const data = await r.json();
+      const products = (data.products || [])
+        .map((p: any) => ({
+          nombre: p.product_name, marca: p.brands, img: p.image_front_small_url,
+          kcal: p.nutriments?.["energy-kcal_100g"], p: p.nutriments?.proteins_100g,
+          c: p.nutriments?.carbohydrates_100g, f: p.nutriments?.fat_100g,
+        }))
+        .filter((x: any) => x.nombre && x.kcal != null);
+      return json({ products });
+    } catch (e) {
+      console.error(e);
+      return json({ error: "Error buscando productos" }, 502);
+    }
+  }
+
   try {
     if (action === "analyze-food") {
       if (DEMO) return json({ analysis: demoFood(), demo: true });

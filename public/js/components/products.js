@@ -1,29 +1,6 @@
 import { store, SLOTS } from "../store.js";
+import { searchProducts as buscarProductos } from "../api.js";
 import { toast } from "./ui.js";
-
-// Busca en Open Food Facts (gratis, con CORS, sin clave).
-async function buscarProductos(query, soloHacendado) {
-  const params = new URLSearchParams({
-    search_terms: query, search_simple: "1", action: "process", json: "1",
-    page_size: "30",
-    fields: "code,product_name,brands,image_front_small_url,nutriments",
-  });
-  if (soloHacendado) params.set("brands_tags", "hacendado");
-  const res = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`);
-  if (!res.ok) throw new Error("OFF no disponible");
-  const data = await res.json();
-  return (data.products || [])
-    .map((p) => ({
-      nombre: p.product_name,
-      marca: p.brands,
-      img: p.image_front_small_url,
-      kcal: p.nutriments?.["energy-kcal_100g"],
-      p: p.nutriments?.proteins_100g,
-      c: p.nutriments?.carbohydrates_100g,
-      f: p.nutriments?.fat_100g,
-    }))
-    .filter((x) => x.nombre && x.kcal != null);
-}
 
 export function renderProducts(root) {
   root.innerHTML = `
