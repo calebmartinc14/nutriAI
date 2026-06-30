@@ -110,3 +110,31 @@ create policy "read rutinas" on rutinas for select using (owner_id is null or ow
 create policy "crud rutinas" on rutinas for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 create policy "read re"  on rutina_ejercicios for select using (auth.role() = 'authenticated');
 create policy "crud re"  on rutina_ejercicios for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+-- ===========================================================================
+-- HISTORIAL DE EJERCICIOS y RUTINAS PERSONALIZADAS (sistema propio del usuario)
+-- ===========================================================================
+create table if not exists historial_ejercicios (
+  id uuid primary key default gen_random_uuid(),
+  user_id   uuid not null references auth.users on delete cascade,
+  fecha     date not null,
+  ejercicio text not null,
+  peso_kg   numeric,
+  series    int,
+  reps      int,
+  created_at timestamptz default now()
+);
+create index if not exists idx_hist_user_ej on historial_ejercicios(user_id, ejercicio, fecha);
+
+create table if not exists rutinas_personalizadas (
+  id uuid primary key default gen_random_uuid(),
+  user_id    uuid not null references auth.users on delete cascade,
+  nombre     text not null,
+  ejercicios jsonb default '[]',   -- [{nombre, muscle}]
+  created_at timestamptz default now()
+);
+
+alter table historial_ejercicios    enable row level security;
+alter table rutinas_personalizadas   enable row level security;
+create policy "own hist"     on historial_ejercicios  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rutinas"  on rutinas_personalizadas for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

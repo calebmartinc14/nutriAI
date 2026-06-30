@@ -1,4 +1,5 @@
 import { store, computeTargets } from "../store.js";
+import { LANGS, getLang, setLang, t } from "../lib/i18n.js";
 import { toast } from "./ui.js";
 
 const ACTIVITIES = [
@@ -36,6 +37,14 @@ export function openOnboarding({ isEdit = false, onDone } = {}) {
       <div class="modal">
         <h3>${isEdit ? "Editar mi perfil" : "¡Bienvenido a NutriAI! 👋"}</h3>
         <p class="sub">${isEdit ? "Ajusta tus datos y recalculamos tu plan." : "Cuéntanos sobre ti y calcularemos tus calorías y macros ideales."}</p>
+
+        ${isEdit ? `
+        <div class="field">
+          <label>${t("common.language")}</label>
+          <div class="chip-group" data-group="lang">
+            ${LANGS.map((l) => `<div class="chip ${getLang() === l.id ? "active" : ""}" data-lang="${l.id}"><span class="chip-label">${l.label}</span></div>`).join("")}
+          </div>
+        </div>` : ""}
 
         <div class="field">
           <label>Sexo</label>
@@ -84,9 +93,15 @@ export function openOnboarding({ isEdit = false, onDone } = {}) {
       const key = group.dataset.group;
       group.querySelectorAll(".chip").forEach((chip) =>
         chip.addEventListener("click", () => {
-          sel[key] = chip.dataset.val;
           group.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
           chip.classList.add("active");
+          if (key === "lang") {
+            // Cambia el idioma al instante (sin recargar).
+            setLang(chip.dataset.lang);
+            window.dispatchEvent(new Event("nutriai-lang"));
+            return;
+          }
+          sel[key] = chip.dataset.val;
         })
       );
     });

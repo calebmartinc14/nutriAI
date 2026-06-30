@@ -40,8 +40,19 @@ function save(state) {
   localStorage.setItem(KEY, JSON.stringify(state));
 }
 
+// Clave de día en hora LOCAL del usuario (NO UTC). Evita el desfase de 1 día:
+// toISOString() convierte a UTC y para husos > 0 (ej. España) la noche se
+// guardaba/mostraba como el día siguiente. Aquí usamos los componentes locales.
 function todayKey(d = new Date()) {
-  return d.toISOString().slice(0, 10); // YYYY-MM-DD
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+// Parsea una clave "YYYY-MM-DD" como fecha LOCAL (no UTC) para mostrar/calcular.
+export function parseLocalDate(key) {
+  return new Date(`${key}T00:00:00`);
 }
 
 function getState() {
@@ -55,6 +66,9 @@ function getState() {
     sessions: s.sessions ?? [], // [{ date, focus }] entrenos completados
     customExercises: s.customExercises ?? {}, // { focus: [{id,name,muscle}] }
     hiddenExercises: s.hiddenExercises ?? {}, // { focus: [name, ...] }
+    customRoutines: s.customRoutines ?? [], // [{id,name,exercises:[{name,muscle}]}]
+    hideDefaultRoutine: s.hideDefaultRoutine ?? false,
+    lang: s.lang ?? null, // idioma preferido (i18n)
     profile: s.profile ?? null,
     onboarded: s.onboarded ?? false,
     username: s.username ?? null,
@@ -117,8 +131,14 @@ function profileRow(s) {
     training_days: s.trainingDays ?? 3,
     goals: s.goals ?? null,
     onboarded: s.onboarded ?? false,
-    // Personalización de la rutina (ejercicios propios y ocultos) -> se sincroniza.
-    routine: { custom: s.customExercises ?? {}, hidden: s.hiddenExercises ?? {} },
+    // Personalización (ejercicios propios/ocultos, rutinas propias, idioma) -> se sincroniza.
+    routine: {
+      custom: s.customExercises ?? {},
+      hidden: s.hiddenExercises ?? {},
+      customRoutines: s.customRoutines ?? [],
+      hideDefaultRoutine: s.hideDefaultRoutine ?? false,
+      lang: s.lang ?? null,
+    },
   };
 }
 
@@ -338,7 +358,7 @@ export const store = {
     const monday = new Date();
     monday.setHours(0, 0, 0, 0);
     monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-    return getState().sessions.filter((x) => new Date(x.date) >= monday).length;
+    return getState().sessions.filter((x) => parseLocalDate(x.date) >= monday).length;
   },
 
   // Racha de semanas consecutivas (hasta hoy) con al menos un entreno.
@@ -346,10 +366,10 @@ export const store = {
     const dates = getState().sessions.map((x) => x.date);
     if (!dates.length) return 0;
     const weekId = (d) => {
-      const dt = new Date(d);
+      const dt = parseLocalDate(d);
       dt.setHours(0, 0, 0, 0);
       dt.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
-      return dt.toISOString().slice(0, 10);
+      return todayKey(dt);
     };
     const weeks = new Set(dates.map(weekId));
     let streak = 0;
@@ -424,6 +444,55 @@ export const store = {
     return s.goals;
   },
 
+  // ---- Idioma (i18n) ----
+  lang() {
+    return getState().lang;
+  },
+  setLang(l) {
+    const s = getState();
+    s.lang = l;
+    save(s);
+    emit("profile", "upsert", profileRow(s));
+  },
+
+  // ---- Rutinas propias ----
+  customRoutines() {
+    return getState().customRoutines;
+  },
+  addRoutine(name) {
+    const s = getState();
+    const r = { id: crypto.randomUUID(), name, exercises: [] };
+    s.customRoutines.push(r);
+    save(s);
+    emit("profile", "upsert", profileRow(s));
+    return r;
+  },
+  deleteRoutine(id) {
+    const s = getState();
+    s.customRoutines = s.customRoutines.filter((r) => r.id !== id);
+    save(s);
+    emit("profile", "upsert", profileRow(s));
+  },
+  addExerciseToRoutine(routineId, name, muscle = "") {
+    const s = getState();
+    const r = s.customRoutines.find((x) => x.id === routineId);
+    if (r) { r.exercises.push({ name, muscle }); save(s); emit("profile", "upsert", profileRow(s)); }
+  },
+  removeExerciseFromRoutine(routineId, idx) {
+    const s = getState();
+    const r = s.customRoutines.find((x) => x.id === routineId);
+    if (r) { r.exercises.splice(idx, 1); save(s); emit("profile", "upsert", profileRow(s)); }
+  },
+  hideDefaultRoutine() {
+    return getState().hideDefaultRoutine;
+  },
+  setHideDefaultRoutine(v) {
+    const s = getState();
+    s.hideDefaultRoutine = !!v;
+    save(s);
+    emit("profile", "upsert", profileRow(s));
+  },
+
   // ---- Identidad / nube ----
   setNamespace,
   setSyncHandler,
@@ -454,6 +523,9 @@ export const store = {
       sessions: data.sessions ?? [],
       customExercises: data.customExercises ?? {},
       hiddenExercises: data.hiddenExercises ?? {},
+      customRoutines: data.customRoutines ?? [],
+      hideDefaultRoutine: data.hideDefaultRoutine ?? false,
+      lang: data.lang ?? null,
       profile: data.profile ?? null,
       onboarded: data.onboarded ?? false,
       username: data.username ?? null,

@@ -65,8 +65,14 @@ async function handleFile(root, file, slot, ctx) {
   root.innerHTML = `
     <div class="scanner">
       <img class="preview" src="${preview.dataUrl}" alt="plato" />
-      <div class="spinner"></div>
       <p>Analizando con IA…</p>
+      <div class="result-rows" aria-hidden="true">
+        <div class="skeleton sk-line mid"></div>
+        <div class="skeleton sk-line"></div>
+        <div class="skeleton sk-line short"></div>
+        <div class="skeleton sk-line short"></div>
+      </div>
+      <div class="spinner"></div>
     </div>`;
 
   try {

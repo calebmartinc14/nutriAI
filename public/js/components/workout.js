@@ -85,6 +85,21 @@ function draw(root) {
   const sc = scheme(profile?.goal);
   const split = splitFor(days);
   const streak = store.weekStreak();
+  const hideDef = store.hideDefaultRoutine();
+
+  const generated = `
+    <div class="card wk-controls">
+      <label>¿Cuántos días puedes entrenar a la semana?</label>
+      <div class="chip-group" id="days-group">
+        ${[2, 3, 4, 5, 6].map((d) => `<div class="chip ${d === days ? "active" : ""}" data-days="${d}"><span class="chip-label">${d} días</span></div>`).join("")}
+      </div>
+      <p class="wk-scheme">📋 Sugerido: ${sc.sets} series · ${sc.reps} reps · descanso ${sc.rest}. ${sc.note}</p>
+    </div>
+    <div class="wk-days">
+      ${split.map(([focus, variant], i) => dayCard(i + 1, focus, variant, sc)).join("")}
+    </div>
+    ${sc.cardio ? `<div class="card wk-cardio">🏃 <b>Cardio:</b> 15-25 min al final de cada sesión.</div>` : ""}
+    <div class="card wk-warmup">🔥 <b>Calentamiento:</b> 5-10 min de movilidad + 1-2 series ligeras del primer ejercicio.</div>`;
 
   root.innerHTML = `
     <div class="weight-head">
@@ -98,20 +113,13 @@ function draw(root) {
       ${miniStat("🏆", store.sessions().length, "entrenos totales")}
     </div>
 
-    <div class="card wk-controls">
-      <label>¿Cuántos días puedes entrenar a la semana?</label>
-      <div class="chip-group" id="days-group">
-        ${[2, 3, 4, 5, 6].map((d) => `<div class="chip ${d === days ? "active" : ""}" data-days="${d}"><span class="chip-label">${d} días</span></div>`).join("")}
-      </div>
-      <p class="wk-scheme">📋 Sugerido: ${sc.sets} series · ${sc.reps} reps · descanso ${sc.rest}. ${sc.note}</p>
-    </div>
+    ${myRoutinesSection()}
 
-    <div class="wk-days">
-      ${split.map(([focus, variant], i) => dayCard(i + 1, focus, variant, sc)).join("")}
+    <div class="section-title" style="margin-top:24px; display:flex; justify-content:space-between; align-items:center">
+      <span>Rutina sugerida</span>
+      <button class="wk-toggle-def" id="toggle-def">${hideDef ? "Mostrar" : "Ocultar"}</button>
     </div>
-
-    ${sc.cardio ? `<div class="card wk-cardio">🏃 <b>Cardio:</b> 15-25 min al final de cada sesión.</div>` : ""}
-    <div class="card wk-warmup">🔥 <b>Calentamiento:</b> 5-10 min de movilidad + 1-2 series ligeras del primer ejercicio.</div>
+    ${hideDef ? "" : generated}
 
     <div class="section-title" style="margin-top:28px">Plan personalizado con IA ✨</div>
     <div class="card wk-ai-card">
@@ -192,6 +200,36 @@ function bind(root) {
       });
     })
   );
+
+  // --- Mis rutinas ---
+  root.querySelector("#create-routine")?.addEventListener("click", () => {
+    const name = root.querySelector("#new-routine-name").value.trim();
+    if (!name) return toast("Ponle un nombre a la rutina");
+    store.addRoutine(name);
+    toast("Rutina creada 💪");
+    draw(root);
+  });
+  root.querySelectorAll("[data-delroutine]").forEach((btn) =>
+    btn.addEventListener("click", () => { store.deleteRoutine(btn.dataset.delroutine); draw(root); })
+  );
+  root.querySelectorAll("[data-addtoroutine]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.addtoroutine;
+      openExerciseExplorer({ onAdd: (name, muscle) => { store.addExerciseToRoutine(id, name, muscle); draw(root); } });
+    })
+  );
+  root.querySelectorAll("[data-rmrex]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const [id, idx] = btn.dataset.rmrex.split("|");
+      store.removeExerciseFromRoutine(id, Number(idx));
+      draw(root);
+    })
+  );
+  // Ocultar/mostrar rutina sugerida
+  root.querySelector("#toggle-def")?.addEventListener("click", () => {
+    store.setHideDefaultRoutine(!store.hideDefaultRoutine());
+    draw(root);
+  });
 
   // Guardar ejercicio propio
   root.querySelectorAll("[data-saveexercise]").forEach((btn) =>
@@ -281,6 +319,32 @@ function exerciseRow(ex, focus, sc, uid) {
 
 function miniStat(emoji, value, label) {
   return `<div class="card mini-stat"><div class="ms-top">${emoji} <b>${value}</b></div><div class="ms-label">${label}</div></div>`;
+}
+
+function myRoutinesSection() {
+  const routines = store.customRoutines();
+  return `
+    <div class="section-title" style="margin-top:8px">Mis rutinas</div>
+    <div class="my-routines">
+      ${routines.length ? routines.map(routineCard).join("") : `<p class="hist-note">Aún no tienes rutinas propias. Créate una con el nombre que quieras 💪</p>`}
+    </div>
+    <div class="wk-newroutine">
+      <input id="new-routine-name" type="text" placeholder="Nombre (ej. Mi día de pierna rompedora)" />
+      <button class="btn btn-primary" id="create-routine">＋ Crear rutina</button>
+    </div>`;
+}
+
+function routineCard(r) {
+  return `
+    <div class="card my-routine">
+      <div class="mr-head"><b>${esc(r.name)}</b><button class="ex-remove" data-delroutine="${r.id}" title="Borrar rutina">🗑</button></div>
+      <div class="mr-exs">
+        ${r.exercises.length
+          ? r.exercises.map((e, i) => `<div class="mr-ex"><span>${esc(e.name)}${e.muscle ? ` · <span class="mr-ex-m">${esc(e.muscle)}</span>` : ""}</span><button class="set-del" data-rmrex="${r.id}|${i}" title="Quitar">✕</button></div>`).join("")
+          : `<div class="meal-empty" style="padding-left:0">Sin ejercicios todavía</div>`}
+      </div>
+      <button class="wk-add-ex" data-addtoroutine="${r.id}">📚 Añadir ejercicio</button>
+    </div>`;
 }
 
 function attr(s) { return String(s).replace(/"/g, "&quot;"); }

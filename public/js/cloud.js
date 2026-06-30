@@ -33,6 +33,9 @@ export async function pullAll(user) {
     onboarded: p?.onboarded ?? false,
     customExercises: p?.routine?.custom ?? {},
     hiddenExercises: p?.routine?.hidden ?? {},
+    customRoutines: p?.routine?.customRoutines ?? [],
+    hideDefaultRoutine: p?.routine?.hideDefaultRoutine ?? false,
+    lang: p?.routine?.lang ?? null,
     username,
     meals: (meals.data ?? []).map((m) => ({
       id: m.id, date: m.date, name: m.name, slot: m.slot,

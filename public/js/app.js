@@ -1,6 +1,8 @@
 import { store } from "./store.js";
 import { getStatus } from "./api.js";
 import { CLOUD_ENABLED, getCurrentUser, renderLogin, signOut } from "./auth.js";
+import { renderLanding } from "./components/landing.js";
+import { t, applyI18n } from "./lib/i18n.js";
 import * as cloud from "./cloud.js";
 import { renderDashboard } from "./components/dashboard.js";
 import { renderScanner } from "./components/scanner.js";
@@ -39,6 +41,14 @@ function refresh() {
 
 function render(params = {}) {
   const ctx = { navigate, refresh, params };
+  renderCurrent(ctx);
+  // Animación de entrada de la vista (fade-in + slide-up) en cada navegación.
+  viewEl.classList.remove("view-enter");
+  void viewEl.offsetWidth; // reinicia la animación
+  viewEl.classList.add("view-enter");
+}
+
+function renderCurrent(ctx) {
   if (current === "dashboard") renderDashboard(viewEl, ctx);
   else if (current === "scanner") renderScanner(viewEl, ctx);
   else if (current === "history") renderHistory(viewEl, ctx);
@@ -55,7 +65,7 @@ function render(params = {}) {
 function updateHeader() {
   const h = new Date().getHours();
   document.getElementById("greeting").textContent =
-    h < 12 ? "Buenos días 👋" : h < 19 ? "Buenas tardes 👋" : "Buenas noches 👋";
+    h < 12 ? t("greet.morning") : h < 19 ? t("greet.afternoon") : t("greet.evening");
   const dateLabel = new Intl.DateTimeFormat("es", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
   document.getElementById("date-label").textContent =
     dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
@@ -81,7 +91,7 @@ function addSignOutButton() {
   const btn = document.createElement("button");
   btn.id = "signout";
   btn.className = "nav-item";
-  btn.innerHTML = `<span class="ni-ico">⎋</span> Cerrar sesión`;
+  btn.innerHTML = `<span class="ni-ico">⎋</span> <span class="ni-tx" data-i18n="nav.signout">Cerrar sesión</span>`;
   btn.addEventListener("click", signOut);
   foot.insertBefore(btn, foot.firstChild);
 }
@@ -102,7 +112,8 @@ async function initApp() {
       console.error("Error iniciando la nube:", e);
     }
     if (!user) {
-      renderLogin(() => location.reload()); // tras login recargamos y entramos
+      // Landing explicativa -> botón "Comenzar" -> formulario de login.
+      renderLanding(() => renderLogin(() => location.reload()));
       return;
     }
     try {
@@ -114,6 +125,7 @@ async function initApp() {
     addSignOutButton();
   }
 
+  applyI18n(document); // traduce el nav y textos marcados
   updateHeader();
   updateAiBadge();
 
@@ -122,5 +134,12 @@ async function initApp() {
   }
   navigate("dashboard");
 }
+
+// Al cambiar de idioma (desde Mi perfil), re-traduce y refresca cabecera/vista.
+window.addEventListener("nutriai-lang", () => {
+  applyI18n(document);
+  updateHeader();
+  refresh();
+});
 
 initApp();

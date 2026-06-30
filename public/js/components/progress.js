@@ -76,7 +76,7 @@ function drawBody(root) {
 }
 
 function dayRow(d) {
-  const fecha = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d.date));
+  const fecha = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d.date + "T00:00:00"));
   const sets = d.sets.map((s) => `${s.kg}×${s.reps}`).join(", ");
   return `
     <div class="card day-card has-data" style="padding:12px 16px">

@@ -186,9 +186,12 @@ function dayRow(d, dayLetter) {
   return `<div class="card day-card ${has ? "has-data" : "no-data"}">${head}${meals}</div>`;
 }
 
-// ---- Helpers de fecha ----
+// ---- Helpers de fecha (LOCAL, no UTC, para evitar el desfase de 1 día) ----
 function todayKey(d = new Date()) {
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function mondayOf(offset) {

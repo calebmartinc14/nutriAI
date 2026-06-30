@@ -95,7 +95,7 @@ function draw(root) {
 // ---- Grafica de linea SVG ----
 function lineChart(weights) {
   const W = 600, H = 220, pad = { l: 40, r: 16, t: 16, b: 28 };
-  const xs = weights.map((w) => new Date(w.date).getTime());
+  const xs = weights.map((w) => new Date(w.date + "T00:00:00").getTime());
   const ys = weights.map((w) => w.kg);
   const minX = Math.min(...xs), maxX = Math.max(...xs);
   let minY = Math.min(...ys), maxY = Math.max(...ys);
@@ -107,7 +107,7 @@ function lineChart(weights) {
   const px = (x) => pad.l + ((x - minX) / (maxX - minX || 1)) * (W - pad.l - pad.r);
   const py = (y) => pad.t + (1 - (y - minY) / (maxY - minY)) * (H - pad.t - pad.b);
 
-  const pts = weights.map((w) => [px(new Date(w.date).getTime()), py(w.kg)]);
+  const pts = weights.map((w) => [px(new Date(w.date + "T00:00:00").getTime()), py(w.kg)]);
   const path = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(" ");
   const area = `${path} L ${pts.at(-1)[0].toFixed(1)} ${H - pad.b} L ${pts[0][0].toFixed(1)} ${H - pad.b} Z`;
 
@@ -143,7 +143,7 @@ function stat(label, value, unit, color) {
 function changeInLastDays(weights, days) {
   if (weights.length < 2) return 0;
   const cutoff = Date.now() - days * 86400000;
-  const recent = weights.filter((w) => new Date(w.date).getTime() >= cutoff);
+  const recent = weights.filter((w) => new Date(w.date + "T00:00:00").getTime() >= cutoff);
   const base = recent[0] ?? weights[0];
   const last = weights.at(-1);
   return +(last.kg - base.kg).toFixed(1);
@@ -164,5 +164,5 @@ function fmtChange(n) {
 }
 
 function fmtDate(key) {
-  return new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(new Date(key));
+  return new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(new Date(key + "T00:00:00"));
 }
