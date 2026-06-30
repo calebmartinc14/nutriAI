@@ -1,6 +1,7 @@
 import { store } from "../store.js";
 import { generateWorkout } from "../api.js";
 import { isRanked } from "../lib/ranking.js";
+import { openExerciseExplorer } from "./exercises.js";
 import { toast } from "./ui.js";
 
 // Base de ejercicios. NO incluye sentadilla ni peso muerto.
@@ -182,6 +183,16 @@ function bind(root) {
     btn.addEventListener("click", () => root.querySelector(`[data-addpanel="${btn.dataset.addform}"]`)?.classList.toggle("hidden"))
   );
 
+  // Abrir el explorador de la base de datos de ejercicios
+  root.querySelectorAll("[data-explorer]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const focus = btn.dataset.explorer;
+      openExerciseExplorer({
+        onAdd: (name, muscle) => { store.addCustomExercise(focus, name, muscle); draw(root); },
+      });
+    })
+  );
+
   // Guardar ejercicio propio
   root.querySelectorAll("[data-saveexercise]").forEach((btn) =>
     btn.addEventListener("click", () => {
@@ -222,7 +233,10 @@ function dayCard(n, focus, variant, sc) {
       <div class="wk-ex-list">
         ${exercises.map((ex, i) => exerciseRow(ex, focus, sc, `${focus}${variant}${n}-${i}`)).join("")}
       </div>
-      <button class="wk-add-ex" data-addform="${addId}">＋ Añadir ejercicio</button>
+      <div class="wk-add-row">
+        <button class="wk-add-ex" data-explorer="${focus}">📚 Desde la base de datos</button>
+        <button class="wk-add-ex" data-addform="${addId}">✏️ Manual</button>
+      </div>
       <div class="wk-addpanel hidden" data-addpanel="${addId}">
         <input class="new-ex-name" type="text" placeholder="Nombre del ejercicio" />
         <input class="new-ex-muscle" type="text" placeholder="Músculo (opcional)" />

@@ -10,8 +10,11 @@ create table if not exists profiles (
   sex text, age int, height numeric, weight numeric,
   activity text, goal text, training_days int default 3,
   goals jsonb, onboarded boolean default false,
+  routine jsonb, -- personalizacion de la rutina (ejercicios propios/ocultos)
   updated_at timestamptz default now()
 );
+-- Si ya creaste la tabla antes, ejecuta esta linea para anadir la columna:
+alter table profiles add column if not exists routine jsonb;
 
 -- ---------- COMIDAS ----------
 create table if not exists meals (

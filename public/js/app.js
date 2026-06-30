@@ -10,6 +10,9 @@ import { renderWeight } from "./components/weight.js";
 import { renderWorkout } from "./components/workout.js";
 import { renderRank } from "./components/rank.js";
 import { renderLeague } from "./components/league.js";
+import { renderProducts } from "./components/products.js";
+import { renderRecipes } from "./components/recipes.js";
+import { renderProgress } from "./components/progress.js";
 import { openOnboarding } from "./components/onboarding.js";
 
 const viewEl = document.getElementById("view");
@@ -41,8 +44,11 @@ function render(params = {}) {
   else if (current === "history") renderHistory(viewEl, ctx);
   else if (current === "weight") renderWeight(viewEl, ctx);
   else if (current === "workout") renderWorkout(viewEl, ctx);
+  else if (current === "progress") renderProgress(viewEl, ctx);
   else if (current === "rank") renderRank(viewEl, ctx);
   else if (current === "league") renderLeague(viewEl, ctx);
+  else if (current === "products") renderProducts(viewEl, ctx);
+  else if (current === "recipes") renderRecipes(viewEl, ctx);
   else if (current === "coach") renderCoach(viewEl, ctx);
 }
 
