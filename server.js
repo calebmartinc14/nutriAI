@@ -258,6 +258,31 @@ app.post("/api/product-search", async (req, res) => {
   }
 });
 
+// ---------------------------------------------------------------------------
+// POST /api/product-barcode  -> producto de Open Food Facts por código de barras
+// ---------------------------------------------------------------------------
+app.post("/api/product-barcode", async (req, res) => {
+  try {
+    const code = String(req.body?.barcode || "").replace(/\D/g, "");
+    if (!code) return res.status(400).json({ error: "Código no válido" });
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=code,product_name,brands,image_front_small_url,nutriments`, {
+      headers: { "User-Agent": "NutriAI/1.0 (app de nutricion)" },
+    });
+    if (!r.ok) return res.status(502).json({ error: "Open Food Facts no disponible" });
+    const data = await r.json();
+    if (data.status !== 1 || !data.product) return res.status(404).json({ error: "Producto no encontrado" });
+    const p = data.product;
+    res.json({ product: {
+      nombre: p.product_name, marca: p.brands, img: p.image_front_small_url,
+      kcal: p.nutriments?.["energy-kcal_100g"], p: p.nutriments?.proteins_100g,
+      c: p.nutriments?.carbohydrates_100g, f: p.nutriments?.fat_100g,
+    } });
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: "Error buscando el producto" });
+  }
+});
+
 // Estado del servidor (lo usa el front para mostrar el badge demo/IA real).
 app.get("/api/status", (_req, res) => {
   res.json({ demo: DEMO_MODE, model: DEMO_MODE ? null : GEMINI_MODEL });

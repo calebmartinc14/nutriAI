@@ -90,6 +90,7 @@ function getState() {
     customExercises: s.customExercises ?? {}, // { focus: [{id,name,muscle}] }
     hiddenExercises: s.hiddenExercises ?? {}, // { focus: [name, ...] }
     customRoutines: (s.customRoutines ?? []).map(normalizeRoutine), // [{id,name,days:[{id,label,exercises}]}]
+    favorites: s.favorites ?? [], // [{id,name,calories,protein,carbs,fat}]
     hideDefaultRoutine: s.hideDefaultRoutine ?? false,
     lang: s.lang ?? null, // idioma preferido (i18n)
     profile: s.profile ?? null,
@@ -161,6 +162,7 @@ function profileRow(s) {
       customRoutines: s.customRoutines ?? [],
       hideDefaultRoutine: s.hideDefaultRoutine ?? false,
       lang: s.lang ?? null,
+      favorites: s.favorites ?? [],
     },
   };
 }
@@ -230,6 +232,50 @@ export const store = {
   // ---- Consulta de historico ----
   allMeals() {
     return getState().meals;
+  },
+
+  // ---- Añadir rápido: recientes, favoritos, repetir ayer ----
+  recentMeals(limit = 8) {
+    const seen = new Set();
+    const out = [];
+    for (const m of [...getState().meals].reverse()) { // más recientes primero
+      const key = (m.name || "").toLowerCase();
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      out.push({ name: m.name, calories: m.calories, protein: m.protein, carbs: m.carbs, fat: m.fat });
+      if (out.length >= limit) break;
+    }
+    return out;
+  },
+
+  favorites() {
+    return getState().favorites;
+  },
+  addFavorite(meal) {
+    const s = getState();
+    if (s.favorites.some((f) => f.name.toLowerCase() === (meal.name || "").toLowerCase())) return;
+    s.favorites.push({ id: crypto.randomUUID(), name: meal.name, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat });
+    save(s);
+    emit("profile", "upsert", profileRow(s));
+  },
+  removeFavorite(id) {
+    const s = getState();
+    s.favorites = s.favorites.filter((f) => f.id !== id);
+    save(s);
+    emit("profile", "upsert", profileRow(s));
+  },
+  isFavorite(name) {
+    return getState().favorites.some((f) => f.name.toLowerCase() === (name || "").toLowerCase());
+  },
+
+  // Copia las comidas de ayer al día de hoy.
+  repeatYesterday() {
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    const yKey = todayKey(y);
+    const meals = getState().meals.filter((m) => m.date === yKey);
+    meals.forEach((m) => this.addMeal({ name: m.name, slot: m.slot, calories: m.calories, protein: m.protein, carbs: m.carbs, fat: m.fat, source: m.source || "manual" }));
+    return meals.length;
   },
 
   mealsOn(dateKey) {
@@ -567,6 +613,7 @@ export const store = {
       customRoutines: data.customRoutines ?? [],
       hideDefaultRoutine: data.hideDefaultRoutine ?? false,
       lang: data.lang ?? null,
+      favorites: data.favorites ?? [],
       profile: data.profile ?? null,
       onboarded: data.onboarded ?? false,
       username: data.username ?? null,

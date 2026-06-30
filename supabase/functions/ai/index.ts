@@ -98,6 +98,29 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Buscar un producto por código de barras en Open Food Facts (proxy).
+  if (action === "product-barcode") {
+    try {
+      const code = String(body.barcode || "").replace(/\D/g, "");
+      if (!code) return json({ error: "Código no válido" }, 400);
+      const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=code,product_name,brands,image_front_small_url,nutriments`, {
+        headers: { "User-Agent": "NutriAI/1.0 (app de nutrición)" },
+      });
+      if (!r.ok) return json({ error: "Open Food Facts no disponible" }, 502);
+      const data = await r.json();
+      if (data.status !== 1 || !data.product) return json({ error: "Producto no encontrado" }, 404);
+      const p = data.product;
+      return json({ product: {
+        nombre: p.product_name, marca: p.brands, img: p.image_front_small_url,
+        kcal: p.nutriments?.["energy-kcal_100g"], p: p.nutriments?.proteins_100g,
+        c: p.nutriments?.carbohydrates_100g, f: p.nutriments?.fat_100g,
+      } });
+    } catch (e) {
+      console.error(e);
+      return json({ error: "Error buscando el producto" }, 502);
+    }
+  }
+
   try {
     if (action === "analyze-food") {
       if (DEMO) return json({ analysis: demoFood(), demo: true });

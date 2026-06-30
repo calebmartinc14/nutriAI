@@ -1,5 +1,5 @@
 import { store, SLOTS } from "../store.js";
-import { searchProducts as buscarProductos } from "../api.js";
+import { searchProducts as buscarProductos, getProductByBarcode } from "../api.js";
 import { toast } from "./ui.js";
 
 export function renderProducts(root) {
@@ -12,7 +12,10 @@ export function renderProducts(root) {
       <input id="prod-q" type="text" placeholder="Ej. yogur, atún, pan…" />
       <button class="btn btn-primary" id="prod-go">Buscar</button>
     </div>
-    <label class="prod-hac"><input type="checkbox" id="prod-hac" /> Solo Hacendado (Mercadona)</label>
+    <div class="prod-bar-row">
+      <button class="btn btn-ghost" id="prod-scan">📷 Escanear código de barras</button>
+      <label class="prod-hac"><input type="checkbox" id="prod-hac" /> Solo Hacendado</label>
+    </div>
     <div id="prod-results"></div>
   `;
 
@@ -33,8 +36,70 @@ export function renderProducts(root) {
     }
   };
 
+  // Buscar por código de barras (tras escanear o introducir manual)
+  const lookupBarcode = async (code) => {
+    results.innerHTML = `<div class="spinner" style="margin:24px auto"></div>`;
+    try {
+      const product = await getProductByBarcode(code);
+      results.innerHTML = card(product, 0);
+      bindResults(results, [product]);
+    } catch (e) {
+      results.innerHTML = `<p class="hist-note">${e.status === 404 ? "Producto no encontrado para ese código." : "No se pudo buscar el producto."}</p>`;
+    }
+  };
+
   root.querySelector("#prod-go").addEventListener("click", search);
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") search(); });
+  root.querySelector("#prod-scan").addEventListener("click", () => openBarcodeScanner(lookupBarcode));
+}
+
+// Escáner de código de barras. Usa BarcodeDetector nativo (Android/Chrome) si
+// está disponible; si no, pide el código manualmente.
+async function openBarcodeScanner(onFound) {
+  if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
+    return manualBarcode(onFound);
+  }
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+  } catch {
+    return manualBarcode(onFound);
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "bc-overlay";
+  overlay.innerHTML = `
+    <div class="bc-box">
+      <video class="bc-video" autoplay muted playsinline></video>
+      <div class="bc-frame"></div>
+      <p class="bc-hint">Apunta al código de barras…</p>
+      <button class="btn btn-ghost" id="bc-cancel">Cancelar</button>
+      <button class="btn btn-ghost" id="bc-manual">Introducir a mano</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  const video = overlay.querySelector(".bc-video");
+  video.srcObject = stream;
+
+  let stopped = false;
+  const stop = () => { stopped = true; stream.getTracks().forEach((t) => t.stop()); overlay.remove(); };
+  overlay.querySelector("#bc-cancel").addEventListener("click", stop);
+  overlay.querySelector("#bc-manual").addEventListener("click", () => { stop(); manualBarcode(onFound); });
+
+  const detector = new window.BarcodeDetector({ formats: ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] });
+  const loop = async () => {
+    if (stopped) return;
+    try {
+      const codes = await detector.detect(video);
+      if (codes.length) { const code = codes[0].rawValue; stop(); onFound(code); return; }
+    } catch { /* sigue intentando */ }
+    setTimeout(loop, 350);
+  };
+  video.addEventListener("loadeddata", loop);
+}
+
+function manualBarcode(onFound) {
+  const code = prompt("Introduce el código de barras del producto (los números bajo las barras):");
+  if (code && code.trim()) onFound(code.trim());
 }
 
 function card(p, i) {

@@ -1,6 +1,7 @@
 import { store, SLOTS, sumMacros } from "../store.js";
 import { calorieRing, macroRing, animateRings } from "./rings.js";
 import { openManualModal } from "./manual.js";
+import { toast } from "./ui.js";
 
 const GOAL_LABELS = { lose: "Perder grasa", maintain: "Mantener", gain: "Ganar músculo" };
 
@@ -69,7 +70,10 @@ export function renderDashboard(root, { navigate, refresh }) {
       </div>
     </div>
 
-    <div class="meals-title">Comidas de hoy</div>
+    <div class="meals-title-row">
+      <span class="meals-title">Comidas de hoy</span>
+      <button class="wk-toggle-def" id="repeat-yesterday">↻ Repetir ayer</button>
+    </div>
     <div class="meals-grid">
       ${SLOTS.map((slot) => renderSlot(slot, mealsBySlot[slot.id])).join("")}
     </div>
@@ -89,6 +93,13 @@ export function renderDashboard(root, { navigate, refresh }) {
       refresh();
     })
   );
+
+  root.querySelector("#repeat-yesterday")?.addEventListener("click", () => {
+    const n = store.repeatYesterday();
+    if (!n) return toast("No había comidas registradas ayer");
+    toast(`Copiadas ${n} comidas de ayer ✅`);
+    refresh();
+  });
 }
 
 function renderSlot(slot, meals) {

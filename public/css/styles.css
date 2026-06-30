@@ -711,3 +711,29 @@ html, body {
 .wh-ex { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 4px 0; }
 .wh-ex-name { color: var(--text); }
 .wh-ex-sets { color: var(--text-2); white-space: nowrap; }
+
+/* ====================== ESCÁNER CÓDIGO DE BARRAS ====================== */
+.prod-bar-row { display: flex; align-items: center; gap: 14px; margin: 12px 0; flex-wrap: wrap; }
+.prod-bar-row .btn { width: auto; padding: 11px 16px; }
+.bc-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 80; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.bc-box { width: 100%; max-width: 420px; display: flex; flex-direction: column; align-items: center; gap: 12px; position: relative; }
+.bc-video { width: 100%; border-radius: 16px; background: #000; max-height: 60vh; object-fit: cover; }
+.bc-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70%; height: 90px; border: 3px solid var(--cal); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.25); pointer-events: none; }
+.bc-hint { color: #fff; font-size: 14px; }
+.bc-box .btn { width: 100%; }
+
+/* ====================== AÑADIR RÁPIDO (recientes/favoritos) ====================== */
+.qa-wrap { margin-bottom: 16px; }
+.qa-title { font-size: 12px; font-weight: 700; color: var(--text-2); margin: 8px 0 6px; }
+.qa-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.qa-item { display: flex; align-items: stretch; border-radius: 12px; overflow: hidden; border: 1px solid var(--stroke); }
+.qa-chip { background: var(--surface-2); border: none; color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; padding: 8px 10px; cursor: pointer; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.qa-chip small { color: var(--text-3); font-weight: 500; }
+.qa-chip:hover { background: var(--stroke); }
+.qa-x { background: var(--surface); border: none; border-left: 1px solid var(--stroke); color: var(--carbs); cursor: pointer; padding: 0 10px; font-size: 13px; }
+.qa-x-on { color: var(--cal); }
+.qa-hint { color: var(--text-3); font-size: 12px; margin-top: 8px; }
+
+/* Fila título comidas + repetir ayer */
+.meals-title-row { display: flex; align-items: center; justify-content: space-between; margin: 28px 4px 14px; }
+.meals-title-row .meals-title { margin: 0; }

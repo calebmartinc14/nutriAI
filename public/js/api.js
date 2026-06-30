@@ -29,7 +29,7 @@ async function callAI(action, payload) {
   }
 
   // Modo local
-  const route = { "analyze-food": "/api/analyze-food", coach: "/api/coach", workout: "/api/workout", status: "/api/status", "product-search": "/api/product-search" }[action];
+  const route = { "analyze-food": "/api/analyze-food", coach: "/api/coach", workout: "/api/workout", status: "/api/status", "product-search": "/api/product-search", "product-barcode": "/api/product-barcode" }[action];
   const res = await fetch(route, {
     method: action === "status" ? "GET" : "POST",
     headers: { "Content-Type": "application/json" },
@@ -95,4 +95,9 @@ export async function askCoach(messages, context) {
 export async function searchProducts(query, hacendado) {
   const data = await callAI("product-search", { query, hacendado });
   return data.products || [];
+}
+
+export async function getProductByBarcode(barcode) {
+  const data = await callAI("product-barcode", { barcode });
+  return data.product;
 }
