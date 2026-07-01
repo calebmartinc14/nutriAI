@@ -9,7 +9,7 @@
 // Estos dos valores son PÚBLICOS y es seguro tenerlos en el cliente.
 // ===========================================================================
 
-export const SUPABASE_URL = "https://ndhdlstgfvmcruljbxbl.supabase.co"; // ej. "https://abcd1234.supabase.co"
-export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kaGRsc3RnZnZtY3J1bGpieGJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3MjA3MTYsImV4cCI6MjA5ODI5NjcxNn0.N1bjCfyukDrjflrCmgd1K2qLfU46qSOW0sw8ug6Z13s"; 
+export const SUPABASE_URL = "https://vdvnevzhqavenidmulqy.supabase.co"; // ej. "https://abcd1234.supabase.co"
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkdm5ldnpocWF2ZW5pZG11bHF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTAwOTIsImV4cCI6MjA5ODQ4NjA5Mn0.4iIkZEvbVDZ6uVlm96FRHIfagOnQa_BfkU4ASxskyO8"; 
 
 export const CLOUD_ENABLED = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
