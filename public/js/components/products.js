@@ -1,8 +1,8 @@
 import { store, SLOTS } from "../store.js";
-import { openBarcodeScanner } from "./scanner.js";
 import { toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
+import { searchProducts, getProductByBarcode } from "../api.js";
 
 export function renderProducts(root) {
   root.innerHTML = `
@@ -29,7 +29,7 @@ export function renderProducts(root) {
     if (!q) return;
     results.innerHTML = `<div class="spinner" style="margin:24px auto"></div>`;
     try {
-      const list = await buscarProductos(q, root.querySelector("#prod-hac").checked);
+      const list = await searchProducts(q, root.querySelector("#prod-hac").checked);
       if (!list.length) { results.innerHTML = `<p class="hist-note">${t("prod.noResults")}</p>`; return; }
       results.innerHTML = list.map(card).join("");
       bindResults(results, list);

@@ -1,6 +1,7 @@
 import { store } from "../store.js";
 import { toast } from "./ui.js";
 import { t, getLocale } from "../lib/i18n.js";
+import { icon } from "../lib/icons.js";
 
 export function renderWeight(root) {
   draw(root);
