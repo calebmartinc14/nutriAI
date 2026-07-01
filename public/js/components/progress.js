@@ -1,4 +1,5 @@
 import { store } from "../store.js";
+import { t, getLocale } from "../lib/i18n.js";
 
 // Progreso de fuerza por ejercicio: 1RM estimado (Epley) a lo largo del tiempo.
 let selected = null;
@@ -9,11 +10,11 @@ export function renderProgress(root) {
 
   if (!exercises.length) {
     root.innerHTML = `
-      <div class="weight-head"><h2 class="page-title">Progreso de fuerza</h2></div>
+      <div class="weight-head"><h2 class="page-title">${t("prog.title")}</h2></div>
       <div class="card rank-empty">
         <div class="rank-empty-emoji">📈</div>
-        <h3>Aún no hay datos</h3>
-        <p>Registra series en la pestaña <b>Entreno</b> y aquí verás tu evolución por ejercicio.</p>
+        <h3>${t("prog.noData")}</h3>
+        <p>${t("prog.noDataText")}</p>
       </div>`;
     return;
   }
@@ -21,8 +22,8 @@ export function renderProgress(root) {
 
   root.innerHTML = `
     <div class="weight-head">
-      <h2 class="page-title">Progreso de fuerza</h2>
-      <p class="page-sub">Tu 1RM estimado por ejercicio a lo largo del tiempo.</p>
+      <h2 class="page-title">${t("prog.title")}</h2>
+      <p class="page-sub">${t("prog.subtitle")}</p>
     </div>
     <select id="pg-ex" class="pg-select">
       ${exercises.map((e) => `<option value="${attr(e)}" ${e === selected ? "selected" : ""}>${esc(e)}</option>`).join("")}
@@ -54,18 +55,18 @@ function drawBody(root) {
 
   body.innerHTML = `
     <div class="weight-stats" style="margin-top:14px">
-      ${stat("1RM actual", last ? last.toFixed(1) : "—", "kg", "var(--cal)")}
-      ${stat("Mejor marca", days.length ? Math.max(...days.map((d) => d.best1rm)).toFixed(1) : "—", "kg", "var(--carbs)")}
-      ${stat("Cambio", (change > 0 ? "+" : "") + change, "kg", change >= 0 ? "var(--cal)" : "var(--fat)")}
-      ${stat("Registros", days.length, "días", "var(--text-2)")}
+      ${stat(t("prog.current1rm"), last ? last.toFixed(1) : "—", "kg", "var(--cal)")}
+      ${stat(t("prog.bestMark"), days.length ? Math.max(...days.map((d) => d.best1rm)).toFixed(1) : "—", "kg", "var(--carbs)")}
+      ${stat(t("prog.change"), (change > 0 ? "+" : "") + change, "kg", change >= 0 ? "var(--cal)" : "var(--fat)")}
+      ${stat(t("prog.records"), days.length, t("common.days"), "var(--text-2)")}
     </div>
 
     <div class="card chart-card">
-      <div class="section-title">Evolución del 1RM</div>
-      ${days.length >= 2 ? lineChart(days) : `<p class="empty-chart">Registra al menos 2 días para ver la gráfica 📈</p>`}
+      <div class="section-title">${t("prog.evolution1rm")}</div>
+      ${days.length >= 2 ? lineChart(days) : `<p class="empty-chart">${t("prog.chartHint")}</p>`}
     </div>
 
-    <div class="section-title" style="margin-top:24px">Historial</div>
+    <div class="section-title" style="margin-top:24px">${t("prog.history")}</div>
     <div class="hist-days">
       ${days.slice().reverse().map(dayRow).join("")}
     </div>
@@ -76,7 +77,7 @@ function drawBody(root) {
 }
 
 function dayRow(d) {
-  const fecha = new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d.date + "T00:00:00"));
+  const fecha = new Intl.DateTimeFormat(getLocale(), { day: "numeric", month: "short", year: "numeric" }).format(new Date(d.date + "T00:00:00"));
   const sets = d.sets.map((s) => `${s.kg}×${s.reps}`).join(", ");
   return `
     <div class="card day-card has-data" style="padding:12px 16px">

@@ -40,6 +40,10 @@ Escribe cada bloque en UNA SOLA LINEA, sin markdown ni comillas de codigo:
 Usa numeros (gramos y kcal). Elige el slot segun la hora del dia si no se especifica.
 NO uses bloques de codigo (nada de triple comilla). Si el usuario NO reporta comida, NO incluyas ningun bloque.`.trim();
 
+// Idioma en el que debe responder la IA (segun la interfaz del usuario).
+const LANG_NAMES = { es: "español", en: "inglés (English)", fr: "francés (français)" };
+const langLine = (lang) => `Responde SIEMPRE en ${LANG_NAMES[lang] ?? "español"}.`;
+
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -76,7 +80,7 @@ app.post("/api/analyze-food", async (req, res) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        systemInstruction: { parts: [{ text: `${SYSTEM_PROMPT}\nEscribe "dish_name" y "notes" en el idioma del usuario. ${langLine(req.body?.lang)}` }] },
         contents: [
           {
             role: "user",
@@ -134,7 +138,7 @@ app.post("/api/coach", async (req, res) => {
       : "";
 
     const coachPrompt = `
-Eres "Coach Nutricional IA", cercano y motivador. Respondes en espanol, breve y
+Eres "Coach Nutricional IA", cercano y motivador. ${langLine(req.body?.lang)} Breve y
 accionable. Usa el contexto de macros del usuario para personalizar consejos,
 sugerir recetas y ajustar el menu. No des consejo medico; recomienda un
 profesional para condiciones de salud. ${contextText}
@@ -183,7 +187,7 @@ app.post("/api/workout", async (req, res) => {
   try {
     const trainerPrompt = `
 Eres un entrenador personal experto en hipertrofia y fuerza.
-Crea una rutina de gimnasio semanal personalizada y clara, en español.
+Crea una rutina de gimnasio semanal personalizada y clara. ${langLine(req.body?.lang)}
 
 RESTRICCIONES OBLIGATORIAS (muy importante):
 - PROHIBIDO incluir sentadillas (squat) o cualquier variante (sentadilla búlgara,

@@ -1,20 +1,21 @@
 import { store, SLOTS } from "../store.js";
 import { searchProducts as buscarProductos, getProductByBarcode } from "../api.js";
 import { toast } from "./ui.js";
+import { t, slotLabel } from "../lib/i18n.js";
 
 export function renderProducts(root) {
   root.innerHTML = `
     <div class="weight-head">
-      <h2 class="page-title">Buscar productos</h2>
-      <p class="page-sub">Añade alimentos por peso. Datos de Open Food Facts.</p>
+      <h2 class="page-title">${t("prod.title")}</h2>
+      <p class="page-sub">${t("prod.subtitle")}</p>
     </div>
     <div class="prod-search">
-      <input id="prod-q" type="text" placeholder="Ej. yogur, atún, pan…" />
-      <button class="btn btn-primary" id="prod-go">Buscar</button>
+      <input id="prod-q" type="text" placeholder="${t("prod.placeholder")}" />
+      <button class="btn btn-primary" id="prod-go">${t("prod.search")}</button>
     </div>
     <div class="prod-bar-row">
-      <button class="btn btn-ghost" id="prod-scan">📷 Escanear código de barras</button>
-      <label class="prod-hac"><input type="checkbox" id="prod-hac" /> Solo Hacendado</label>
+      <button class="btn btn-ghost" id="prod-scan">${t("prod.scan")}</button>
+      <label class="prod-hac"><input type="checkbox" id="prod-hac" /> ${t("prod.onlyHacendado")}</label>
     </div>
     <div id="prod-results"></div>
   `;
@@ -28,11 +29,11 @@ export function renderProducts(root) {
     results.innerHTML = `<div class="spinner" style="margin:24px auto"></div>`;
     try {
       const list = await buscarProductos(q, root.querySelector("#prod-hac").checked);
-      if (!list.length) { results.innerHTML = `<p class="hist-note">Sin resultados. Prueba otro término.</p>`; return; }
+      if (!list.length) { results.innerHTML = `<p class="hist-note">${t("prod.noResults")}</p>`; return; }
       results.innerHTML = list.map(card).join("");
       bindResults(results, list);
     } catch {
-      results.innerHTML = `<p class="hist-note">No se pudo conectar con Open Food Facts. Revisa tu conexión e inténtalo de nuevo.</p>`;
+      results.innerHTML = `<p class="hist-note">${t("prod.connError")}</p>`;
     }
   };
 
@@ -44,7 +45,7 @@ export function renderProducts(root) {
       results.innerHTML = card(product, 0);
       bindResults(results, [product]);
     } catch (e) {
-      results.innerHTML = `<p class="hist-note">${e.status === 404 ? "Producto no encontrado para ese código." : "No se pudo buscar el producto."}</p>`;
+      results.innerHTML = `<p class="hist-note">${e.status === 404 ? t("prod.notFound") : t("prod.lookupError")}</p>`;
     }
   };
 
@@ -72,9 +73,9 @@ async function openBarcodeScanner(onFound) {
     <div class="bc-box">
       <video class="bc-video" autoplay muted playsinline></video>
       <div class="bc-frame"></div>
-      <p class="bc-hint">Apunta al código de barras…</p>
-      <button class="btn btn-ghost" id="bc-cancel">Cancelar</button>
-      <button class="btn btn-ghost" id="bc-manual">Introducir a mano</button>
+      <p class="bc-hint">${t("bc.hint")}</p>
+      <button class="btn btn-ghost" id="bc-cancel">${t("common.cancel")}</button>
+      <button class="btn btn-ghost" id="bc-manual">${t("bc.manual")}</button>
     </div>`;
   document.body.appendChild(overlay);
   const video = overlay.querySelector(".bc-video");
@@ -98,7 +99,7 @@ async function openBarcodeScanner(onFound) {
 }
 
 function manualBarcode(onFound) {
-  const code = prompt("Introduce el código de barras del producto (los números bajo las barras):");
+  const code = prompt(t("bc.prompt"));
   if (code && code.trim()) onFound(code.trim());
 }
 
@@ -114,8 +115,8 @@ function card(p, i) {
         <div class="prod-meta">${esc(p.marca || "")} · ${Math.round(p.kcal)} kcal/100g · P${r1(p.p)} C${r1(p.c)} G${r1(p.f)}</div>
         <div class="prod-add hidden" data-form="${i}">
           <input class="prod-g" type="number" inputmode="numeric" value="100" /> g
-          <select class="prod-slot">${SLOTS.map((s) => `<option value="${s.id}">${s.label}</option>`).join("")}</select>
-          <button class="btn btn-primary prod-save" data-save="${i}">Añadir</button>
+          <select class="prod-slot">${SLOTS.map((s) => `<option value="${s.id}">${slotLabel(s.id)}</option>`).join("")}</select>
+          <button class="btn btn-primary prod-save" data-save="${i}">${t("common.add")}</button>
         </div>
       </div>
       <button class="prod-plus" data-plus="${i}" title="Añadir">＋</button>
@@ -142,7 +143,7 @@ function bindResults(root, list) {
         fat: Math.round((p.f || 0) * fct),
         source: "product",
       });
-      toast("Añadido a tu diario ✅");
+      toast(t("prod.added"));
       form.classList.add("hidden");
     })
   );

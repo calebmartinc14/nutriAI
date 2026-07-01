@@ -4,10 +4,13 @@
 // En ambos casos la API key de Gemini vive en el servidor, nunca en el cliente.
 import { CLOUD_ENABLED, SUPABASE_URL, SUPABASE_ANON_KEY } from "./config.js";
 import { getAccessToken } from "./auth.js";
+import { getLang } from "./lib/i18n.js";
 
 const EDGE_URL = `${SUPABASE_URL}/functions/v1/ai`;
 
 async function callAI(action, payload) {
+  // Adjunta el idioma activo para que la IA responda en ese idioma.
+  if (action !== "status") payload = { ...payload, lang: getLang() };
   if (CLOUD_ENABLED) {
     const token = await getAccessToken();
     const res = await fetch(EDGE_URL, {

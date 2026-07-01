@@ -1,5 +1,6 @@
 import { store, SLOTS, sumMacros } from "../store.js";
 import { toast } from "./ui.js";
+import { t, getLocale, dayLetters } from "../lib/i18n.js";
 
 let weekOffset = 0; // 0 = semana actual, -1 = semana pasada, ...
 
@@ -35,17 +36,17 @@ function draw(root, ctx) {
     fat: Math.round(sum.fat / n),
   };
   const maxBar = Math.max(goals.calories, ...week.map((d) => d.totals.calories), 1);
-  const days = ["L", "M", "X", "J", "V", "S", "D"];
+  const days = dayLetters();
   const isCurrentWeek = weekOffset === 0;
 
   root.innerHTML = `
     <div class="hist-head">
-      <button class="hist-nav" id="prev-week" title="Semana anterior">‹</button>
+      <button class="hist-nav" id="prev-week" title="${t("hist.prevWeek")}">‹</button>
       <div class="hist-range">
         <div class="hist-range-title">${rangeLabel(monday)}</div>
-        <div class="hist-range-sub">${isCurrentWeek ? "Semana actual" : ""}</div>
+        <div class="hist-range-sub">${isCurrentWeek ? t("hist.currentWeek") : ""}</div>
       </div>
-      <button class="hist-nav" id="next-week" title="Semana siguiente" ${isCurrentWeek ? "disabled" : ""}>›</button>
+      <button class="hist-nav" id="next-week" title="${t("hist.nextWeek")}" ${isCurrentWeek ? "disabled" : ""}>›</button>
     </div>
 
     <div class="card week-card">
@@ -67,24 +68,24 @@ function draw(root, ctx) {
     </div>
 
     <div class="hist-stats">
-      ${stat("Media diaria", `${avg.calories}`, "kcal", "var(--cal)")}
-      ${stat("Proteínas", `${avg.protein}`, "g/día", "var(--protein)")}
-      ${stat("Carbos", `${avg.carbs}`, "g/día", "var(--carbs)")}
-      ${stat("Grasas", `${avg.fat}`, "g/día", "var(--fat)")}
+      ${stat(t("hist.dailyAvg"), `${avg.calories}`, "kcal", "var(--cal)")}
+      ${stat(t("macro.protein"), `${avg.protein}`, t("macro.perday"), "var(--protein)")}
+      ${stat(t("macro.carbs.short"), `${avg.carbs}`, t("macro.perday"), "var(--carbs)")}
+      ${stat(t("macro.fat"), `${avg.fat}`, t("macro.perday"), "var(--fat)")}
     </div>
-    <p class="hist-note">Promedio sobre ${daysWithData.length} día(s) con registros · Total semana: ${Math.round(sum.calories)} kcal · Objetivo: ${goals.calories} kcal/día</p>
+    <p class="hist-note">${t("hist.avgNote", { n: daysWithData.length, total: Math.round(sum.calories), goal: goals.calories })}</p>
 
-    <div class="section-title" style="margin-top:24px">Día a día</div>
+    <div class="section-title" style="margin-top:24px">${t("hist.dayByDay")}</div>
     <div class="hist-days">
       ${week.map((d, i) => dayRow(d, days[i])).join("")}
     </div>
 
-    <div class="section-title" style="margin-top:28px">Copia de seguridad</div>
+    <div class="section-title" style="margin-top:28px">${t("hist.backup")}</div>
     <div class="card backup-card">
-      <p>Tus datos se guardan en este navegador. Exporta una copia para no perderlos o moverlos a otro equipo.</p>
+      <p>${t("hist.backupText")}</p>
       <div class="btn-row">
-        <button class="btn btn-ghost" id="export-btn">⬇ Exportar datos</button>
-        <button class="btn btn-ghost" id="import-btn">⬆ Importar datos</button>
+        <button class="btn btn-ghost" id="export-btn">${t("hist.export")}</button>
+        <button class="btn btn-ghost" id="import-btn">${t("hist.import")}</button>
         <input type="file" id="import-file" accept="application/json,.json" class="hidden" />
       </div>
     </div>
@@ -124,7 +125,7 @@ function draw(root, ctx) {
     a.download = `nutriai-backup-${todayKey()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
-    toast("Copia descargada ✅");
+    toast(t("hist.downloaded"));
   });
 
   // Importar
@@ -136,10 +137,10 @@ function draw(root, ctx) {
     try {
       const text = await file.text();
       store.importData(JSON.parse(text));
-      toast("Datos importados ✅");
+      toast(t("hist.imported"));
       draw(root, ctx);
     } catch {
-      toast("No se pudo leer el archivo");
+      toast(t("hist.fileError"));
     }
   });
 }
@@ -155,7 +156,7 @@ function stat(label, value, unit, color) {
 
 function dayRow(d, dayLetter) {
   const has = d.meals.length > 0;
-  const dateStr = new Intl.DateTimeFormat("es", { day: "numeric", month: "short" }).format(d.dateObj);
+  const dateStr = new Intl.DateTimeFormat(getLocale(), { day: "numeric", month: "short" }).format(d.dateObj);
   const head = `
     <div class="day-head" data-day-toggle="${d.dateKey}">
       <span class="day-letter">${dayLetter}</span>
@@ -165,7 +166,7 @@ function dayRow(d, dayLetter) {
           ? `<span class="day-macros">P ${Math.round(d.totals.protein)} · C ${Math.round(d.totals.carbs)} · G ${Math.round(d.totals.fat)}</span>
              <span class="day-kcal">${Math.round(d.totals.calories)} kcal</span>
              <span class="day-caret">▾</span>`
-          : `<span class="day-empty">Sin registros</span>`
+          : `<span class="day-empty">${t("hist.noRecords")}</span>`
       }
     </div>`;
 
@@ -216,7 +217,7 @@ function buildWeek(monday) {
 function rangeLabel(monday) {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
-  const fmt = (d) => new Intl.DateTimeFormat("es", { day: "numeric", month: "short" }).format(d);
+  const fmt = (d) => new Intl.DateTimeFormat(getLocale(), { day: "numeric", month: "short" }).format(d);
   return `${fmt(monday)} – ${fmt(sunday)}`;
 }
 

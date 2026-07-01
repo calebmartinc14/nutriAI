@@ -43,7 +43,9 @@ html, body {
 .brand-logo { color: var(--cal); font-size: 26px; }
 .brand-name { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
 
-.side-nav { display: flex; flex-direction: column; gap: 4px; }
+.side-nav { display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+.side-nav::-webkit-scrollbar { width: 6px; }
+.side-nav::-webkit-scrollbar-thumb { background: var(--stroke); border-radius: 6px; }
 .nav-item {
   display: flex; align-items: center; gap: 12px;
   background: none; border: none; color: var(--text-2);
@@ -54,7 +56,19 @@ html, body {
 .nav-item.active { background: var(--surface-2); color: var(--cal); }
 .ni-ico { font-size: 18px; width: 20px; text-align: center; }
 
-.side-foot { margin-top: auto; display: flex; flex-direction: column; gap: 12px; padding-top: 12px; }
+.side-foot { margin-top: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; padding-top: 12px; }
+.brand { flex-shrink: 0; }
+
+/* Portátiles con pantalla baja: compacta el menú para que quepa sin recortes. */
+@media (min-width: 861px) and (max-height: 760px) {
+  .sidebar { padding: 14px 12px; }
+  .brand { padding: 2px 8px 12px; }
+  .brand-logo { font-size: 22px; }
+  .brand-name { font-size: 18px; }
+  .nav-item { padding: 9px 12px; font-size: 14px; }
+  .side-nav { gap: 2px; }
+  .side-foot { gap: 8px; padding-top: 8px; }
+}
 
 .main { flex: 1; min-width: 0; }
 .topbar {

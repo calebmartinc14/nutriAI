@@ -3,6 +3,7 @@ import { analyzeFood, fileToCompressedBase64 } from "../api.js";
 import { store } from "../store.js";
 import { openManualModal } from "./manual.js";
 import { toast } from "./ui.js";
+import { t, slotLabel } from "../lib/i18n.js";
 
 // Pantalla de escaner de comida por foto (IA). Uso ilimitado.
 export function renderScanner(root, { navigate, refresh, params }) {
@@ -15,22 +16,22 @@ function pickerView(slot) {
   return `
     <div class="scanner">
       <div class="scanner-ico">🍽️</div>
-      <h2>Escanea tu plato</h2>
-      <p>Toma o sube una foto y la IA estimará calorías y macros automáticamente.</p>
+      <h2>${t("scan.title")}</h2>
+      <p>${t("scan.subtitle")}</p>
 
       <div class="slot-picker">
         ${SLOTS.map(
-          (s) => `<button class="slot-chip ${s.id === slot ? "active" : ""}" data-slot="${s.id}">${s.label}</button>`
+          (s) => `<button class="slot-chip ${s.id === slot ? "active" : ""}" data-slot="${s.id}">${slotLabel(s.id)}</button>`
         ).join("")}
       </div>
 
-      <textarea id="scan-desc" class="scan-desc" rows="2" placeholder="Describe los alimentos para más precisión (opcional). Ej: pechuga de pollo, 150g de arroz y aceite de oliva"></textarea>
+      <textarea id="scan-desc" class="scan-desc" rows="2" placeholder="${t("scan.descPlaceholder")}"></textarea>
 
       <input id="file-camera" type="file" accept="image/*" capture="environment" class="hidden" />
       <input id="file-gallery" type="file" accept="image/*" class="hidden" />
 
-      <button class="btn btn-primary btn-block" id="btn-camera">📷 Cámara</button>
-      <button class="btn btn-ghost btn-block" id="btn-gallery">🖼️ Subir foto</button>
+      <button class="btn btn-primary btn-block" id="btn-camera">${t("scan.camera")}</button>
+      <button class="btn btn-ghost btn-block" id="btn-gallery">${t("scan.gallery")}</button>
     </div>`;
 }
 
@@ -62,13 +63,13 @@ async function handleFile(root, file, slot, ctx, desc = "") {
   try {
     preview = await fileToCompressedBase64(file);
   } catch {
-    return toast("No se pudo leer la imagen");
+    return toast(t("scan.readError"));
   }
 
   root.innerHTML = `
     <div class="scanner">
       <img class="preview" src="${preview.dataUrl}" alt="plato" />
-      <p>Analizando con IA…</p>
+      <p>${t("scan.analyzing")}</p>
       <div class="result-rows" aria-hidden="true">
         <div class="skeleton sk-line mid"></div>
         <div class="skeleton sk-line"></div>
@@ -79,7 +80,7 @@ async function handleFile(root, file, slot, ctx, desc = "") {
     </div>`;
 
   // Combina la descripción del usuario con el tramo para dar más contexto a la IA.
-  const hint = [desc, `Es el ${slotLabel(slot)}`].filter(Boolean).join(". ");
+  const hint = [desc, t("scan.isMeal", { slot: slotLabel(slot) })].filter(Boolean).join(". ");
   try {
     const analysis = await analyzeFood(preview.base64, hint);
     renderResult(root, { analysis, photo: preview.dataUrl, slot }, ctx);
@@ -94,16 +95,16 @@ function renderResult(root, { analysis, photo, slot }, ctx) {
     <div class="scanner">
       <img class="preview" src="${photo}" alt="plato" />
       <h2>${escapeHtml(a.dish_name)}</h2>
-      <p class="confidence">Confianza ${Math.round((a.confidence ?? 0.5) * 100)}%</p>
+      <p class="confidence">${t("scan.confidence", { n: Math.round((a.confidence ?? 0.5) * 100) })}</p>
       <div class="result-rows">
-        ${row("Calorías", `${Math.round(a.calories)} kcal`, "var(--cal)")}
-        ${row("Proteínas", `${Math.round(a.protein_g)} g`, "var(--protein)")}
-        ${row("Carbohidratos", `${Math.round(a.carbs_g)} g`, "var(--carbs)")}
-        ${row("Grasas", `${Math.round(a.fat_g)} g`, "var(--fat)")}
+        ${row(t("macro.calories"), `${Math.round(a.calories)} kcal`, "var(--cal)")}
+        ${row(t("macro.protein"), `${Math.round(a.protein_g)} g`, "var(--protein)")}
+        ${row(t("macro.carbs"), `${Math.round(a.carbs_g)} g`, "var(--carbs)")}
+        ${row(t("macro.fat"), `${Math.round(a.fat_g)} g`, "var(--fat)")}
       </div>
-      <button class="btn btn-primary btn-block" id="save">Guardar en mi diario</button>
-      <button class="btn btn-ghost btn-block" id="edit">Ajustar valores</button>
-      <button class="btn btn-ghost btn-block" id="retry">Repetir foto</button>
+      <button class="btn btn-primary btn-block" id="save">${t("scan.saveDiary")}</button>
+      <button class="btn btn-ghost btn-block" id="edit">${t("scan.adjust")}</button>
+      <button class="btn btn-ghost btn-block" id="retry">${t("scan.retryPhoto")}</button>
     </div>`;
 
   const meal = {
@@ -119,7 +120,7 @@ function renderResult(root, { analysis, photo, slot }, ctx) {
 
   root.querySelector("#save").addEventListener("click", () => {
     store.addMeal(meal);
-    toast("Guardado ✅");
+    toast(t("common.saved"));
     ctx.navigate("dashboard");
   });
   root.querySelector("#edit").addEventListener("click", () => {
@@ -132,9 +133,9 @@ function renderError(root, message, ctx) {
   root.innerHTML = `
     <div class="scanner">
       <div class="scanner-ico">⚠️</div>
-      <h2>Ups</h2>
+      <h2>${t("scan.oops")}</h2>
       <p>${escapeHtml(message)}</p>
-      <button class="btn btn-primary btn-block" id="retry">Reintentar</button>
+      <button class="btn btn-primary btn-block" id="retry">${t("common.retry")}</button>
     </div>`;
   root.querySelector("#retry").addEventListener("click", () => ctx.navigate("scanner"));
 }
@@ -145,8 +146,6 @@ const row = (label, value, color) => `
     <span class="rl">${label}</span>
     <span class="rv">${value}</span>
   </div>`;
-
-const slotLabel = (id) => SLOTS.find((s) => s.id === id)?.label ?? "";
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) =>

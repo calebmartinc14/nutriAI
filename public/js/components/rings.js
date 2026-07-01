@@ -1,4 +1,5 @@
 // Render de anillos de progreso con SVG puro (sin librerias).
+import { t } from "../lib/i18n.js";
 
 const styles = getComputedStyle(document.documentElement);
 const COLORS = {
@@ -38,7 +39,7 @@ export function calorieRing(consumed, target) {
     content: `
       <div class="calorie-center">
         <div class="calorie-number">${remaining}</div>
-        <div class="calorie-sub">kcal restantes</div>
+        <div class="calorie-sub">${t("ring.remaining")}</div>
         <div class="calorie-frac">${Math.round(consumed)} / ${Math.round(target)}</div>
       </div>`,
   });
@@ -57,7 +58,7 @@ export function macroRing(label, consumed, target, colorKey) {
       })}
       <div>
         <div class="mr-label">${label}</div>
-        <div class="mr-target">de ${Math.round(target)}g</div>
+        <div class="mr-target">${t("ring.of", { n: Math.round(target) })}</div>
       </div>
     </div>`;
 }

@@ -2,22 +2,23 @@ import { store, SLOTS } from "../store.js";
 import { RECIPES, COMIDA_PCT, COMIDA_SLOT, escalarReceta, totalesPlan } from "../lib/recipes.js";
 import { estimateFood } from "../api.js";
 import { toast } from "./ui.js";
+import { t, slotLabel } from "../lib/i18n.js";
 
 export function renderRecipes(root) {
   const mine = store.userRecipes();
   root.innerHTML = `
     <div class="weight-head">
-      <h2 class="page-title">Recetas</h2>
-      <p class="page-sub">Las cantidades se ajustan a tus macros objetivo para cada comida.</p>
+      <h2 class="page-title">${t("rec.title")}</h2>
+      <p class="page-sub">${t("rec.subtitle")}</p>
     </div>
 
     <div class="section-title" style="margin-top:4px; display:flex; justify-content:space-between; align-items:center">
-      <span>Mis recetas</span>
-      <button class="wk-toggle-def" id="new-user-rec">＋ Crear receta</button>
+      <span>${t("rec.mine")}</span>
+      <button class="wk-toggle-def" id="new-user-rec">${t("rec.create")}</button>
     </div>
-    ${mine.length ? `<div class="rec-grid">${mine.map(userCard).join("")}</div>` : `<p class="hist-note">Crea tus propias recetas con ingredientes, gramos y macros (a mano o con IA).</p>`}
+    ${mine.length ? `<div class="rec-grid">${mine.map(userCard).join("")}</div>` : `<p class="hist-note">${t("rec.mineHint")}</p>`}
 
-    <div class="section-title" style="margin-top:24px">Recetas sugeridas</div>
+    <div class="section-title" style="margin-top:24px">${t("rec.suggested")}</div>
     <div class="rec-grid">
       ${RECIPES.map(card).join("")}
     </div>
@@ -40,13 +41,13 @@ function userTotals(r) {
 }
 
 function userCard(r) {
-  const t = userTotals(r);
+  const tt = userTotals(r);
   return `
     <div class="card rec-card" data-userrec="${r.id}">
       <div class="rec-emoji">📗</div>
       <div class="rec-info">
         <div class="rec-title">${esc(r.name)}</div>
-        <div class="rec-meal">${Math.round(t.calories)} kcal · ${r.ingredients.length} ingr.</div>
+        <div class="rec-meal">${Math.round(tt.calories)} kcal · ${r.ingredients.length} ${t("rec.ingr")}</div>
       </div>
     </div>`;
 }
@@ -54,31 +55,31 @@ function userCard(r) {
 function openUserRecipe(root, id) {
   const r = store.userRecipes().find((x) => x.id === id);
   if (!r) return;
-  const t = userTotals(r);
+  const tt = userTotals(r);
   const detail = root.querySelector("#rec-detail");
   detail.innerHTML = `
     <div class="card rec-detail-card">
       <div class="rec-detail-head"><span>📗 <b>${esc(r.name)}</b></span><button class="ex-close" id="ur-x">✕</button></div>
-      <div class="section-title" style="margin-top:8px">Ingredientes</div>
+      <div class="section-title" style="margin-top:8px">${t("rec.ingredients")}</div>
       <div class="rec-ings">
         ${r.ingredients.map((i) => `<div class="rec-ing"><span>${esc(i.name)} · ${i.grams} g</span><b>${Math.round(i.calories)} kcal</b></div>`).join("")}
       </div>
-      <div class="rec-totals">≈ ${Math.round(t.calories)} kcal · ${Math.round(t.protein)}P · ${Math.round(t.carbs)}C · ${Math.round(t.fat)}G</div>
+      <div class="rec-totals">≈ ${Math.round(tt.calories)} kcal · ${Math.round(tt.protein)}P · ${Math.round(tt.carbs)}C · ${Math.round(tt.fat)}G</div>
       <div class="rec-addrow">
-        <select id="ur-slot" class="prod-slot">${SLOTS.map((s) => `<option value="${s.id}">${s.label}</option>`).join("")}</select>
-        <button class="btn btn-primary" id="ur-add">Añadir al diario</button>
-        <button class="btn btn-ghost" id="ur-del">Borrar</button>
+        <select id="ur-slot" class="prod-slot">${SLOTS.map((s) => `<option value="${s.id}">${slotLabel(s.id)}</option>`).join("")}</select>
+        <button class="btn btn-primary" id="ur-add">${t("rec.addDiary")}</button>
+        <button class="btn btn-ghost" id="ur-del">${t("common.delete")}</button>
       </div>
     </div>`;
   detail.querySelector("#ur-x").addEventListener("click", () => (detail.innerHTML = ""));
   detail.querySelector("#ur-add").addEventListener("click", () => {
-    store.addMeal({ name: r.name, slot: detail.querySelector("#ur-slot").value, calories: Math.round(t.calories), protein: Math.round(t.protein), carbs: Math.round(t.carbs), fat: Math.round(t.fat), source: "recipe" });
-    toast("Receta añadida a tu diario ✅");
+    store.addMeal({ name: r.name, slot: detail.querySelector("#ur-slot").value, calories: Math.round(tt.calories), protein: Math.round(tt.protein), carbs: Math.round(tt.carbs), fat: Math.round(tt.fat), source: "recipe" });
+    toast(t("rec.addedDiary"));
     detail.innerHTML = "";
   });
   detail.querySelector("#ur-del").addEventListener("click", () => {
     store.deleteUserRecipe(r.id);
-    toast("Receta borrada");
+    toast(t("rec.deleted"));
     renderRecipes(root);
   });
   detail.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -92,28 +93,28 @@ function openRecipeCreator(root) {
 
   const rowHtml = (r, i) => `
     <div class="ing-row" data-i="${i}">
-      <input class="ing-name" placeholder="Alimento" value="${attr(r.name)}" />
+      <input class="ing-name" placeholder="${t("rec.ingFood")}" value="${attr(r.name)}" />
       <input class="ing-g" type="number" inputmode="numeric" placeholder="g" value="${attr(r.grams)}" />
       <input class="ing-kcal" type="number" inputmode="numeric" placeholder="kcal" value="${attr(r.calories)}" />
       <input class="ing-p" type="number" inputmode="numeric" placeholder="P" value="${attr(r.protein)}" />
       <input class="ing-c" type="number" inputmode="numeric" placeholder="C" value="${attr(r.carbs)}" />
       <input class="ing-f" type="number" inputmode="numeric" placeholder="G" value="${attr(r.fat)}" />
-      <button class="ing-ai" data-ai="${i}" title="Calcular con IA">✨</button>
-      <button class="ing-rm" data-rm="${i}" title="Quitar">✕</button>
+      <button class="ing-ai" data-ai="${i}" title="${t("rec.aiTitle")}">✨</button>
+      <button class="ing-rm" data-rm="${i}" title="${t("rec.remove")}">✕</button>
     </div>`;
 
   const draw = () => {
     backdrop.innerHTML = `
       <div class="modal rec-creator">
-        <div class="rec-detail-head"><h3>Nueva receta</h3><button class="ex-close" id="rc-x">✕</button></div>
-        <div class="field"><label>Nombre de la receta</label><input id="rc-name" type="text" placeholder="Ej. Mi bowl proteico" /></div>
-        <div class="ing-head"><span>Ingredientes</span><small>gramos + macros (✨ = calcular con IA)</small></div>
+        <div class="rec-detail-head"><h3>${t("rec.newRecipe")}</h3><button class="ex-close" id="rc-x">✕</button></div>
+        <div class="field"><label>${t("rec.name")}</label><input id="rc-name" type="text" placeholder="${t("rec.namePlaceholder")}" /></div>
+        <div class="ing-head"><span>${t("rec.ingredients")}</span><small>${t("rec.ingHint")}</small></div>
         <div id="ing-list">${rows.map(rowHtml).join("")}</div>
-        <button class="wk-add-ex" id="rc-adding">＋ Añadir ingrediente</button>
+        <button class="wk-add-ex" id="rc-adding">${t("rec.addIngredient")}</button>
         <div class="rec-totals" id="rc-tot"></div>
         <div class="btn-row" style="margin-top:8px">
-          <button class="btn btn-ghost" id="rc-cancel">Cancelar</button>
-          <button class="btn btn-primary" id="rc-save" style="flex:1">Guardar receta</button>
+          <button class="btn btn-ghost" id="rc-cancel">${t("common.cancel")}</button>
+          <button class="btn btn-primary" id="rc-save" style="flex:1">${t("rec.save")}</button>
         </div>
       </div>`;
     const nameEl = backdrop.querySelector("#rc-name");
@@ -135,14 +136,14 @@ function openRecipeCreator(root) {
       row.querySelector("[data-ai]").addEventListener("click", async () => {
         read();
         const r = rows[i];
-        if (!r.name || !(Number(r.grams) > 0)) return toast("Pon el alimento y los gramos primero");
+        if (!r.name || !(Number(r.grams) > 0)) return toast(t("rec.needFoodGrams"));
         const btn = row.querySelector("[data-ai]");
         btn.textContent = "…"; btn.disabled = true;
         try {
           const m = await estimateFood(r.name, Number(r.grams));
           rows[i] = { ...r, calories: Math.round(m.calories), protein: Math.round(m.protein), carbs: Math.round(m.carbs), fat: Math.round(m.fat) };
           draw();
-        } catch { toast("No se pudo calcular con IA"); btn.textContent = "✨"; btn.disabled = false; }
+        } catch { toast(t("rec.aiError")); btn.textContent = "✨"; btn.disabled = false; }
       });
     });
 
@@ -151,21 +152,21 @@ function openRecipeCreator(root) {
   };
 
   function updateTotals() {
-    const t = rows.reduce((a, r) => ({ c: a.c + (+r.calories || 0), p: a.p + (+r.protein || 0), ca: a.ca + (+r.carbs || 0), f: a.f + (+r.fat || 0) }), { c: 0, p: 0, ca: 0, f: 0 });
+    const tot = rows.reduce((a, r) => ({ c: a.c + (+r.calories || 0), p: a.p + (+r.protein || 0), ca: a.ca + (+r.carbs || 0), f: a.f + (+r.fat || 0) }), { c: 0, p: 0, ca: 0, f: 0 });
     const el = backdrop.querySelector("#rc-tot");
-    if (el) el.textContent = `Total ≈ ${Math.round(t.c)} kcal · ${Math.round(t.p)}P · ${Math.round(t.ca)}C · ${Math.round(t.f)}G`;
+    if (el) el.textContent = `Total ≈ ${Math.round(tot.c)} kcal · ${Math.round(tot.p)}P · ${Math.round(tot.ca)}C · ${Math.round(tot.f)}G`;
   }
 
   function save() {
     const name = (draw._name || backdrop.querySelector("#rc-name").value).trim();
-    if (!name) return toast("Ponle un nombre a la receta");
+    if (!name) return toast(t("rec.needName"));
     const ingredients = rows
       .filter((r) => r.name && r.name.trim())
       .map((r) => ({ name: r.name.trim(), grams: Number(r.grams) || 0, calories: Number(r.calories) || 0, protein: Number(r.protein) || 0, carbs: Number(r.carbs) || 0, fat: Number(r.fat) || 0 }));
-    if (!ingredients.length) return toast("Añade al menos un ingrediente");
+    if (!ingredients.length) return toast(t("rec.needIngredient"));
     store.addUserRecipe({ name, ingredients });
     backdrop.remove();
-    toast("Receta guardada 📗");
+    toast(t("rec.saved"));
     renderRecipes(root);
   }
 
@@ -207,12 +208,12 @@ function openRecipe(root, id) {
           <button class="ex-close" id="rec-x">✕</button>
         </div>
 
-        <label class="rec-pct-label">Esta comida = <b>${pct}%</b> de tus macros diarios</label>
+        <label class="rec-pct-label">${t("rec.pct", { pct: `<b>${pct}%</b>` })}</label>
         <input id="rec-pct" type="range" min="10" max="60" step="5" value="${pct}" class="rec-range" />
 
-        <div class="rec-target">Objetivo: ${Math.round(objetivo.p)}P · ${Math.round(objetivo.c)}C · ${Math.round(objetivo.f)}G</div>
+        <div class="rec-target">${t("rec.target")}: ${Math.round(objetivo.p)}P · ${Math.round(objetivo.c)}C · ${Math.round(objetivo.f)}G</div>
 
-        <div class="section-title" style="margin-top:14px">Ingredientes (ajustados)</div>
+        <div class="section-title" style="margin-top:14px">${t("rec.ingAdjusted")}</div>
         <div class="rec-ings">
           ${plan.map((it) => `<div class="rec-ing"><span>${esc(it.nombre)}</span><b>${it.gramos} g</b></div>`).join("")}
         </div>
@@ -221,10 +222,10 @@ function openRecipe(root, id) {
           ≈ ${Math.round(tot.calories)} kcal · ${Math.round(tot.protein)}P · ${Math.round(tot.carbs)}C · ${Math.round(tot.fat)}G
         </div>
 
-        <div class="section-title" style="margin-top:14px">Pasos</div>
+        <div class="section-title" style="margin-top:14px">${t("rec.steps")}</div>
         <ol class="rec-steps">${r.pasos.map((p) => `<li>${esc(p)}</li>`).join("")}</ol>
 
-        <button class="btn btn-primary btn-block" id="rec-add">Añadir al diario (${cap(r.comida)})</button>
+        <button class="btn btn-primary btn-block" id="rec-add">${t("rec.addDiary")} (${cap(r.comida)})</button>
       </div>`;
 
     detail.querySelector("#rec-x").addEventListener("click", () => (detail.innerHTML = ""));
@@ -239,7 +240,7 @@ function openRecipe(root, id) {
         fat: Math.round(tot.fat),
         source: "recipe",
       });
-      toast("Receta añadida a tu diario ✅");
+      toast(t("rec.addedDiary"));
       detail.innerHTML = "";
     });
     detail.scrollIntoView({ behavior: "smooth", block: "start" });

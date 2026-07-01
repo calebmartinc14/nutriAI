@@ -3,8 +3,7 @@ import { calorieRing, macroRing, animateRings } from "./rings.js";
 import { openManualModal } from "./manual.js";
 import { askCoach } from "../api.js";
 import { toast } from "./ui.js";
-
-const GOAL_LABELS = { lose: "Perder grasa", maintain: "Mantener", gain: "Ganar músculo" };
+import { t, slotLabel, dayLetters } from "../lib/i18n.js";
 
 export function renderDashboard(root, { navigate, refresh }) {
   const goals = store.goals();
@@ -18,42 +17,42 @@ export function renderDashboard(root, { navigate, refresh }) {
   const mealsBySlot = Object.fromEntries(SLOTS.map((s) => [s.id, []]));
   meals.forEach((m) => mealsBySlot[m.slot]?.push(m));
 
-  const days = ["L", "M", "X", "J", "V", "S", "D"];
+  const days = dayLetters();
   const diff = goals.calories - (goals.maintenance ?? goals.calories);
-  const diffText = diff === 0 ? "Mantenimiento" : diff > 0 ? `+${diff}` : `${diff}`;
+  const diffText = diff === 0 ? t("dash.maintword") : diff > 0 ? `+${diff}` : `${diff}`;
 
   root.innerHTML = `
     <div class="dash-hero">
       <div class="card rings-card">
         ${calorieRing(consumed.calories, goals.calories)}
         <div class="macro-rings">
-          ${macroRing("Proteínas", consumed.protein, goals.protein, "protein")}
-          ${macroRing("Carbos", consumed.carbs, goals.carbs, "carbs")}
-          ${macroRing("Grasas", consumed.fat, goals.fat, "fat")}
+          ${macroRing(t("macro.protein"), consumed.protein, goals.protein, "protein")}
+          ${macroRing(t("macro.carbs.short"), consumed.carbs, goals.carbs, "carbs")}
+          ${macroRing(t("macro.fat"), consumed.fat, goals.fat, "fat")}
         </div>
       </div>
 
       <div class="dash-side">
         <div class="card summary-card">
-          <div class="section-title">Tu plan</div>
+          <div class="section-title">${t("dash.plan")}</div>
           <div class="summary-grid">
             <div class="summary-item">
               <div class="si-val">${goals.maintenance ?? goals.calories}</div>
-              <div class="si-label">Mantenimiento (kcal)</div>
+              <div class="si-label">${t("dash.maintenance")}</div>
             </div>
             <div class="summary-item">
               <div class="si-val accent">${goals.calories}</div>
-              <div class="si-label">Objetivo (kcal) · ${diffText}</div>
+              <div class="si-label">${t("dash.goalKcal")} · ${diffText}</div>
             </div>
           </div>
           <div class="summary-goal">
-            <span>Meta: <b>${GOAL_LABELS[profile?.goal] ?? "—"}</b></span>
-            <span>Macros: <b>P ${goals.protein} · C ${goals.carbs} · G ${goals.fat}</b></span>
+            <span>${t("dash.goalLabel")}: <b>${profile?.goal ? t("goal." + profile.goal) : "—"}</b></span>
+            <span>${t("dash.macros")}: <b>P ${goals.protein} · C ${goals.carbs} · G ${goals.fat}</b></span>
           </div>
         </div>
 
         <div class="card week-card">
-          <div class="section-title">Esta semana</div>
+          <div class="section-title">${t("dash.week")}</div>
           <div class="bars">
             ${weekly
               .map((v, i) => {
@@ -74,8 +73,8 @@ export function renderDashboard(root, { navigate, refresh }) {
     </div>
 
     <div class="meals-title-row">
-      <span class="meals-title">Comidas de hoy</span>
-      <button class="wk-toggle-def" id="repeat-yesterday">↻ Repetir ayer</button>
+      <span class="meals-title">${t("dash.mealsToday")}</span>
+      <button class="wk-toggle-def" id="repeat-yesterday">${t("dash.repeatYesterday")}</button>
     </div>
     <div class="meals-grid">
       ${SLOTS.map((slot) => renderSlot(slot, mealsBySlot[slot.id])).join("")}
@@ -108,8 +107,8 @@ export function renderDashboard(root, { navigate, refresh }) {
 
   root.querySelector("#repeat-yesterday")?.addEventListener("click", () => {
     const n = store.repeatYesterday();
-    if (!n) return toast("No había comidas registradas ayer");
-    toast(`Copiadas ${n} comidas de ayer ✅`);
+    if (!n) return toast(t("dash.noYesterday"));
+    toast(t("dash.copiedYesterday", { n }));
     refresh();
   });
 
@@ -133,28 +132,28 @@ async function openWeeklyReview() {
 
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
-  backdrop.innerHTML = `<div class="modal"><div class="rec-detail-head"><h3>✨ Repaso semanal</h3><button class="ex-close" id="wr-x">✕</button></div><div id="wr-body"><div class="spinner" style="margin:24px auto"></div></div></div>`;
+  backdrop.innerHTML = `<div class="modal"><div class="rec-detail-head"><h3>${t("wr.title")}</h3><button class="ex-close" id="wr-x">✕</button></div><div id="wr-body"><div class="spinner" style="margin:24px auto"></div></div></div>`;
   document.body.appendChild(backdrop);
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) backdrop.remove(); });
   backdrop.querySelector("#wr-x").addEventListener("click", () => backdrop.remove());
 
-  const msg =
-    `Hazme un repaso breve y motivador de mi semana. Datos: media de ${avgCal} kcal/día (objetivo ${goals.calories}), ` +
-    `${sessions} entrenos esta semana, racha de ${streak} días registrando comida, ` +
-    `cambio de peso ${wChange >= 0 ? "+" : ""}${wChange} kg. Dame 2-3 frases de resumen y un consejo concreto para la semana que viene.`;
+  const msg = t("wr.prompt", {
+    avg: avgCal, goal: goals.calories, sessions, streak,
+    wchange: `${wChange >= 0 ? "+" : ""}${wChange}`,
+  });
 
   try {
     const reply = await askCoach([{ role: "user", content: msg }], { consumed: { calories: avgCal }, target: goals });
     backdrop.querySelector("#wr-body").innerHTML = `
       <div class="wr-stats">
-        <div><b>${avgCal}</b><span>kcal/día</span></div>
-        <div><b>${sessions}</b><span>entrenos</span></div>
-        <div><b>${streak}</b><span>racha</span></div>
-        <div><b>${wChange >= 0 ? "+" : ""}${wChange}</b><span>kg</span></div>
+        <div><b>${avgCal}</b><span>${t("wr.kcalday")}</span></div>
+        <div><b>${sessions}</b><span>${t("wr.trainings")}</span></div>
+        <div><b>${streak}</b><span>${t("wr.streak")}</span></div>
+        <div><b>${wChange >= 0 ? "+" : ""}${wChange}</b><span>${t("unit.kg")}</span></div>
       </div>
       <p class="wr-text">${escapeHtml(reply)}</p>`;
   } catch {
-    backdrop.querySelector("#wr-body").innerHTML = `<p class="hist-note">No se pudo generar el repaso. Revisa la conexión.</p>`;
+    backdrop.querySelector("#wr-body").innerHTML = `<p class="hist-note">${t("wr.error")}</p>`;
   }
 }
 
@@ -164,13 +163,13 @@ function renderSlot(slot, meals) {
     <div class="card meal-card">
       <div class="meal-head">
         <span class="meal-ico">${slot.ico}</span>
-        <span class="meal-slot">${slot.label}</span>
+        <span class="meal-slot">${slotLabel(slot.id)}</span>
         <span class="meal-kcal">${total} kcal</span>
-        <button class="meal-add" data-add-slot="${slot.id}" title="Añadir manual">＋</button>
+        <button class="meal-add" data-add-slot="${slot.id}" title="${t("dash.addManual")}">＋</button>
       </div>
       ${
         meals.length === 0
-          ? `<div class="meal-empty">Sin registros — toca ＋ o escanea un plato</div>`
+          ? `<div class="meal-empty">${t("dash.slotEmpty")}</div>`
           : meals.map(renderMeal).join("")
       }
     </div>`;
@@ -189,8 +188,8 @@ function renderMeal(m) {
         <div class="meal-macros">P ${Math.round(m.protein)}g · C ${Math.round(m.carbs)}g · G ${Math.round(m.fat)}g</div>
       </div>
       <div class="meal-item-kcal">${Math.round(m.calories)}</div>
-      <button class="meal-edit" data-edit="${m.id}" title="Editar">✎</button>
-      <button class="meal-del" data-del="${m.id}" title="Borrar">✕</button>
+      <button class="meal-edit" data-edit="${m.id}" title="${t("manual.editTitle")}">✎</button>
+      <button class="meal-del" data-del="${m.id}" title="${t("common.delete")}">✕</button>
     </div>`;
 }
 
@@ -200,7 +199,7 @@ function waterCard() {
   const pct = Math.min(100, Math.round((ml / goal) * 100));
   return `
     <div class="card water-card">
-      <div class="water-head"><span class="section-title" style="margin:0">💧 Agua</span><span class="water-val">${ml} / ${goal} ml</span></div>
+      <div class="water-head"><span class="section-title" style="margin:0">${t("dash.water")}</span><span class="water-val">${ml} / ${goal} ml</span></div>
       <div class="water-bar"><div class="water-fill" style="width:${pct}%"></div></div>
       <div class="water-btns">
         <button data-water="250">+250</button>
@@ -214,16 +213,17 @@ function progressCard() {
   const streak = store.nutritionStreak();
   const badges = store.achievements();
   const earned = badges.filter((a) => a.earned).length;
+  const daysWord = streak === 1 ? t("common.day") : t("common.days");
   return `
-    <div class="section-title" style="margin-top:28px">Tu progreso</div>
+    <div class="section-title" style="margin-top:28px">${t("dash.progress")}</div>
     <div class="card prog-card">
       <div class="prog-row">
-        <div class="prog-streak">🔥 <b>${streak}</b> <span>${streak === 1 ? "día" : "días"} registrando comida</span></div>
-        <button class="btn btn-ghost prog-review" id="weekly-review">✨ Repaso semanal</button>
+        <div class="prog-streak">🔥 <b>${streak}</b> <span>${t("dash.streak", { n: "", days: daysWord }).trim()}</span></div>
+        <button class="btn btn-ghost prog-review" id="weekly-review">${t("dash.weeklyReview")}</button>
       </div>
-      <div class="badges-title">Logros (${earned}/${badges.length})</div>
+      <div class="badges-title">${t("dash.achievements", { earned, total: badges.length })}</div>
       <div class="badges">
-        ${badges.map((a) => `<span class="badge-chip ${a.earned ? "earned" : ""}" title="${a.label}">${a.icon}</span>`).join("")}
+        ${badges.map((a) => `<span class="badge-chip ${a.earned ? "earned" : ""}" title="${t("ach." + a.id)}">${a.icon}</span>`).join("")}
       </div>
     </div>`;
 }

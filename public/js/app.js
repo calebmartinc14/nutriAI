@@ -2,7 +2,7 @@ import { store } from "./store.js";
 import { getStatus } from "./api.js";
 import { CLOUD_ENABLED, getCurrentUser, renderLogin, signOut } from "./auth.js";
 import { renderLanding } from "./components/landing.js";
-import { t, applyI18n } from "./lib/i18n.js";
+import { t, applyI18n, getLocale } from "./lib/i18n.js";
 import * as cloud from "./cloud.js";
 import { renderDashboard } from "./components/dashboard.js";
 import { renderScanner } from "./components/scanner.js";
@@ -66,7 +66,7 @@ function updateHeader() {
   const h = new Date().getHours();
   document.getElementById("greeting").textContent =
     h < 12 ? t("greet.morning") : h < 19 ? t("greet.afternoon") : t("greet.evening");
-  const dateLabel = new Intl.DateTimeFormat("es", { weekday: "long", day: "numeric", month: "long" }).format(new Date());
+  const dateLabel = new Intl.DateTimeFormat(getLocale(), { weekday: "long", day: "numeric", month: "long" }).format(new Date());
   document.getElementById("date-label").textContent =
     dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
 }

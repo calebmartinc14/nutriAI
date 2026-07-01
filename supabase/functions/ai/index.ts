@@ -26,6 +26,10 @@ const FOOD_PROMPT = `Eres un nutricionista experto en análisis visual de alimen
 Analiza la imagen y estima los valores de la porción visible. Si no hay comida, "is_food": false.
 Devuelve SOLO JSON válido sin markdown.`;
 
+// Idioma en el que debe responder la IA (según la interfaz del usuario).
+const LANG_NAMES: Record<string, string> = { es: "español", en: "inglés (English)", fr: "francés (français)" };
+const langLine = (lang?: string) => `Responde SIEMPRE en ${LANG_NAMES[lang ?? "es"] ?? "español"}.`;
+
 // El coach puede registrar comidas que el usuario reporta por chat.
 const LOG_INSTRUCTIONS = `MUY IMPORTANTE: si el usuario dice que ha comido o bebido algo, además de tu respuesta breve
 añade al FINAL uno o varios bloques EXACTOS (uno por alimento) con macros estimados de la porción.
@@ -160,7 +164,7 @@ Deno.serve(async (req) => {
     if (action === "analyze-food") {
       if (DEMO) return json({ analysis: demoFood(), demo: true });
       const raw = await gemini(
-        FOOD_PROMPT,
+        `${FOOD_PROMPT}\nEscribe "dish_name" y "notes" en el idioma del usuario. ${langLine(body.lang)}`,
         [
           { text: body.mealHint ? `El usuario describe lo que hay en la foto: "${body.mealHint}". Usa esa información para estimar con MÁS precisión las cantidades y macros.` : "Analiza este plato." },
           { inlineData: { mimeType: body.mimeType ?? "image/jpeg", data: body.imageBase64 } },
@@ -183,7 +187,7 @@ Deno.serve(async (req) => {
       const ctx = body.context
         ? `Contexto: ${body.context.consumed?.calories}/${body.context.target?.calories} kcal hoy.` : "";
       const reply = await gemini(
-        `Eres "Coach Nutricional IA", cercano y conciso, en español. ${ctx}\n${LOG_INSTRUCTIONS}`,
+        `Eres "Coach Nutricional IA", cercano y conciso. ${langLine(body.lang)} ${ctx}\n${LOG_INSTRUCTIONS}`,
         [{ text: (body.messages ?? []).map((m: any) => `${m.role}: ${m.content}`).join("\n") }],
         { temperature: 0.7 },
       );
@@ -194,7 +198,7 @@ Deno.serve(async (req) => {
       if (DEMO) return json({ plan: "Modo demo 🏋️ Añade GEMINI_API_KEY para un plan real.", demo: true });
       const p = body.profile ?? {};
       const reply = await gemini(
-        `Eres un entrenador personal. Crea una rutina semanal en español.
+        `Eres un entrenador personal. Crea una rutina semanal. ${langLine(body.lang)}
 PROHIBIDO sentadillas (squat) y peso muerto (deadlift) y sus variantes.
 Para pierna usa prensa, extensiones, curl femoral, hip thrust, zancadas, gemelos.`,
         [{ text: `Perfil: ${JSON.stringify(p)}. ${body.days ?? 3} días/semana.` }],

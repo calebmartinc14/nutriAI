@@ -1,11 +1,6 @@
 import { store } from "../store.js";
 import { toast } from "./ui.js";
-
-const GOAL_HINT = {
-  lose: "Tu objetivo es perder grasa: busca una bajada lenta y constante.",
-  maintain: "Tu objetivo es mantener: vigila que el peso se quede estable.",
-  gain: "Tu objetivo es ganar músculo: busca una subida progresiva.",
-};
+import { t, getLocale } from "../lib/i18n.js";
 
 export function renderWeight(root) {
   draw(root);
@@ -23,36 +18,36 @@ function draw(root) {
 
   root.innerHTML = `
     <div class="weight-head">
-      <h2 class="page-title">Seguimiento de peso</h2>
-      <p class="page-sub">${profile ? GOAL_HINT[profile.goal] ?? "" : ""}</p>
+      <h2 class="page-title">${t("weight.title")}</h2>
+      <p class="page-sub">${profile?.goal ? t("weight.hint." + profile.goal) : ""}</p>
     </div>
 
     <div class="card weight-input-card">
       <div class="field" style="margin:0; flex:1">
-        <label>Registrar peso de hoy (kg)</label>
+        <label>${t("weight.logToday")}</label>
         <input id="w-input" type="number" inputmode="decimal" step="0.1"
-          placeholder="${current ? current + " kg la última vez" : "Ej. 80.5"}" />
+          placeholder="${current ? t("weight.lastTime", { kg: current }) : t("weight.placeholder")}" />
       </div>
-      <button class="btn btn-primary" id="w-save">Guardar</button>
+      <button class="btn btn-primary" id="w-save">${t("common.save")}</button>
     </div>
 
     <div class="weight-stats">
-      ${stat("Peso actual", current != null ? `${current}` : "—", "kg", "var(--cal)")}
-      ${stat("Cambio total", fmtChange(totalChange), "kg", changeColor(totalChange, profile))}
-      ${stat("Últimos 30 días", fmtChange(change30), "kg", changeColor(change30, profile))}
-      ${stat("Registros", `${weights.length}`, "días", "var(--text-2)")}
+      ${stat(t("weight.current"), current != null ? `${current}` : "—", "kg", "var(--cal)")}
+      ${stat(t("weight.totalChange"), fmtChange(totalChange), "kg", changeColor(totalChange, profile))}
+      ${stat(t("weight.last30"), fmtChange(change30), "kg", changeColor(change30, profile))}
+      ${stat(t("weight.records"), `${weights.length}`, t("common.days"), "var(--text-2)")}
     </div>
 
     <div class="card chart-card">
-      <div class="section-title">Evolución</div>
-      ${weights.length >= 2 ? lineChart(weights) : `<p class="empty-chart">Registra tu peso al menos 2 días para ver la gráfica 📈</p>`}
+      <div class="section-title">${t("weight.evolution")}</div>
+      ${weights.length >= 2 ? lineChart(weights) : `<p class="empty-chart">${t("weight.chartHint")}</p>`}
     </div>
 
-    <div class="section-title" style="margin-top:24px">Registros</div>
+    <div class="section-title" style="margin-top:24px">${t("weight.records")}</div>
     <div class="weight-list">
       ${
         weights.length === 0
-          ? `<p class="hist-note">Aún no has registrado tu peso.</p>`
+          ? `<p class="hist-note">${t("weight.noneYet")}</p>`
           : [...weights]
               .reverse()
               .map((w, i, arr) => {
@@ -75,9 +70,9 @@ function draw(root) {
   const input = root.querySelector("#w-input");
   const saveWeight = () => {
     const kg = Number(input.value);
-    if (!(kg >= 30 && kg <= 400)) return toast("Pon un peso válido (30-400 kg)");
+    if (!(kg >= 30 && kg <= 400)) return toast(t("weight.invalid"));
     store.addWeight(+kg.toFixed(1));
-    toast("Peso guardado ✅");
+    toast(t("weight.saved"));
     draw(root);
   };
   root.querySelector("#w-save").addEventListener("click", saveWeight);
@@ -164,5 +159,5 @@ function fmtChange(n) {
 }
 
 function fmtDate(key) {
-  return new Intl.DateTimeFormat("es", { day: "numeric", month: "short", year: "numeric" }).format(new Date(key + "T00:00:00"));
+  return new Intl.DateTimeFormat(getLocale(), { day: "numeric", month: "short", year: "numeric" }).format(new Date(key + "T00:00:00"));
 }
