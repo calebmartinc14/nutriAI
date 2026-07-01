@@ -1,6 +1,7 @@
 import { store, SLOTS, sumMacros } from "../store.js";
 import { toast } from "./ui.js";
 import { t, getLocale, dayLetters } from "../lib/i18n.js";
+import { icon } from "../lib/icons.js";
 
 let weekOffset = 0; // 0 = semana actual, -1 = semana pasada, ...
 
