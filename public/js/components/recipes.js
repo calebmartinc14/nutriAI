@@ -3,6 +3,7 @@ import { RECIPES, COMIDA_PCT, COMIDA_SLOT, escalarReceta, totalesPlan } from "..
 import { estimateFood } from "../api.js";
 import { toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
+import { icon } from "../lib/icons.js";
 
 export function renderRecipes(root) {
   const mine = store.userRecipes();
@@ -14,7 +15,7 @@ export function renderRecipes(root) {
 
     <div class="section-title" style="margin-top:4px; display:flex; justify-content:space-between; align-items:center">
       <span>${t("rec.mine")}</span>
-      <button class="wk-toggle-def" id="new-user-rec">${t("rec.create")}</button>
+      <button class="wk-toggle-def" id="new-user-rec">${icon('plus', 14)} ${t("rec.create")}</button>
     </div>
     ${mine.length ? `<div class="rec-grid">${mine.map(userCard).join("")}</div>` : `<p class="hist-note">${t("rec.mineHint")}</p>`}
 
@@ -44,7 +45,7 @@ function userCard(r) {
   const tt = userTotals(r);
   return `
     <div class="card rec-card" data-userrec="${r.id}">
-      <div class="rec-emoji">📗</div>
+      <div class="rec-emoji">${icon('book', 30)}</div>
       <div class="rec-info">
         <div class="rec-title">${esc(r.name)}</div>
         <div class="rec-meal">${Math.round(tt.calories)} kcal · ${r.ingredients.length} ${t("rec.ingr")}</div>
@@ -59,7 +60,7 @@ function openUserRecipe(root, id) {
   const detail = root.querySelector("#rec-detail");
   detail.innerHTML = `
     <div class="card rec-detail-card">
-      <div class="rec-detail-head"><span>📗 <b>${esc(r.name)}</b></span><button class="ex-close" id="ur-x">✕</button></div>
+      <div class="rec-detail-head"><span>${icon('book', 18)} <b>${esc(r.name)}</b></span><button class="ex-close" id="ur-x">${icon('x', 18)}</button></div>
       <div class="section-title" style="margin-top:8px">${t("rec.ingredients")}</div>
       <div class="rec-ings">
         ${r.ingredients.map((i) => `<div class="rec-ing"><span>${esc(i.name)} · ${i.grams} g</span><b>${Math.round(i.calories)} kcal</b></div>`).join("")}
@@ -99,18 +100,18 @@ function openRecipeCreator(root) {
       <input class="ing-p" type="number" inputmode="numeric" placeholder="P" value="${attr(r.protein)}" />
       <input class="ing-c" type="number" inputmode="numeric" placeholder="C" value="${attr(r.carbs)}" />
       <input class="ing-f" type="number" inputmode="numeric" placeholder="G" value="${attr(r.fat)}" />
-      <button class="ing-ai" data-ai="${i}" title="${t("rec.aiTitle")}">✨</button>
-      <button class="ing-rm" data-rm="${i}" title="${t("rec.remove")}">✕</button>
+      <button class="ing-ai" data-ai="${i}" title="${t("rec.aiTitle")}">${icon('sparkles', 14)}</button>
+      <button class="ing-rm" data-rm="${i}" title="${t("rec.remove")}">${icon('x', 14)}</button>
     </div>`;
 
   const draw = () => {
     backdrop.innerHTML = `
       <div class="modal rec-creator">
-        <div class="rec-detail-head"><h3>${t("rec.newRecipe")}</h3><button class="ex-close" id="rc-x">✕</button></div>
+        <div class="rec-detail-head"><h3>${t("rec.newRecipe")}</h3><button class="ex-close" id="rc-x">${icon('x', 18)}</button></div>
         <div class="field"><label>${t("rec.name")}</label><input id="rc-name" type="text" placeholder="${t("rec.namePlaceholder")}" /></div>
-        <div class="ing-head"><span>${t("rec.ingredients")}</span><small>${t("rec.ingHint")}</small></div>
+        <div class="ing-head"><span>${t("rec.ingredients")}</span>        <small>gramos + macros (${icon('sparkles', 12)} = calcular con IA)</small></div>
         <div id="ing-list">${rows.map(rowHtml).join("")}</div>
-        <button class="wk-add-ex" id="rc-adding">${t("rec.addIngredient")}</button>
+        <button class="wk-add-ex" id="rc-adding">${icon('plus', 14)} ${t("rec.addIngredient")}</button>
         <div class="rec-totals" id="rc-tot"></div>
         <div class="btn-row" style="margin-top:8px">
           <button class="btn btn-ghost" id="rc-cancel">${t("common.cancel")}</button>
@@ -138,12 +139,12 @@ function openRecipeCreator(root) {
         const r = rows[i];
         if (!r.name || !(Number(r.grams) > 0)) return toast(t("rec.needFoodGrams"));
         const btn = row.querySelector("[data-ai]");
-        btn.textContent = "…"; btn.disabled = true;
+        btn.textContent = "..."; btn.disabled = true;
         try {
           const m = await estimateFood(r.name, Number(r.grams));
           rows[i] = { ...r, calories: Math.round(m.calories), protein: Math.round(m.protein), carbs: Math.round(m.carbs), fat: Math.round(m.fat) };
           draw();
-        } catch { toast(t("rec.aiError")); btn.textContent = "✨"; btn.disabled = false; }
+        } catch { toast(t("rec.aiError")); btn.innerHTML = `${icon('sparkles', 14)}`; btn.disabled = false; }
       });
     });
 
@@ -180,7 +181,7 @@ function attr(s) { return String(s ?? "").replace(/"/g, "&quot;"); }
 function card(r) {
   return `
     <div class="card rec-card" data-rec="${r.id}">
-      <div class="rec-emoji">${r.emoji}</div>
+      <div class="rec-emoji">${icon(r.icon, 30)}</div>
       <div class="rec-info">
         <div class="rec-title">${esc(r.titulo)}</div>
         <div class="rec-meal">${cap(r.comida)}</div>
@@ -204,8 +205,8 @@ function openRecipe(root, id) {
     detail.innerHTML = `
       <div class="card rec-detail-card">
         <div class="rec-detail-head">
-          <span>${r.emoji} <b>${esc(r.titulo)}</b></span>
-          <button class="ex-close" id="rec-x">✕</button>
+          <span>${icon(r.icon, 18)} <b>${esc(r.titulo)}</b></span>
+          <button class="ex-close" id="rec-x">${icon('x', 18)}</button>
         </div>
 
         <label class="rec-pct-label">${t("rec.pct", { pct: `<b>${pct}%</b>` })}</label>

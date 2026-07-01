@@ -1,6 +1,7 @@
 import { store, SLOTS } from "../store.js";
 import { toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
+import { icon } from "../lib/icons.js";
 
 // Modal de registro manual (100% gratis y offline).
 // editId: si se pasa, en vez de crear una comida nueva, EDITA la existente.
@@ -10,9 +11,9 @@ export function openManualModal(slotId = "breakfast", onSaved, prefill = null, e
   const data = (m) => encodeURIComponent(JSON.stringify({ name: m.name, calories: m.calories, protein: m.protein, carbs: m.carbs, fat: m.fat }));
 
   const favItem = (m) =>
-    `<div class="qa-item"><button class="qa-chip" data-quick='${data(m)}'>★ ${escapeHtml(m.name)} <small>${Math.round(m.calories || 0)}</small></button><button class="qa-x" data-rmfav="${m.id}" title="${t("manual.rmFav")}">✕</button></div>`;
+    `<div class="qa-item"><button class="qa-chip" data-quick='${data(m)}'>${icon('star', 12)} ${escapeHtml(m.name)} <small>${Math.round(m.calories || 0)}</small></button><button class="qa-x" data-rmfav="${m.id}" title="${t("manual.rmFav")}">${icon('x', 12)}</button></div>`;
   const recItem = (m) =>
-    `<div class="qa-item"><button class="qa-chip" data-quick='${data(m)}'>${escapeHtml(m.name)} <small>${Math.round(m.calories || 0)}</small></button><button class="qa-x" data-fav='${data(m)}' title="${t("manual.addFav")}">★</button></div>`;
+    `<div class="qa-item"><button class="qa-chip" data-quick='${data(m)}'>${escapeHtml(m.name)} <small>${Math.round(m.calories || 0)}</small></button><button class="qa-x" data-fav='${data(m)}' title="${t("manual.addFav")}">${icon('star', 12)}</button></div>`;
 
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
@@ -22,7 +23,7 @@ export function openManualModal(slotId = "breakfast", onSaved, prefill = null, e
 
       ${!prefill && (favs.length || recents.length) ? `
       <div class="qa-wrap">
-        ${favs.length ? `<div class="qa-title">${t("manual.favorites")}</div><div class="qa-row">${favs.map(favItem).join("")}</div>` : ""}
+        ${favs.length ? `<div class="qa-title">${icon('star', 12)} ${t("manual.favorites")}</div><div class="qa-row">${favs.map(favItem).join("")}</div>` : ""}
         ${recents.length ? `<div class="qa-title">${t("manual.recents")}</div><div class="qa-row">${recents.map(recItem).join("")}</div>` : ""}
         <div class="qa-hint">${t("manual.qaHint")}</div>
       </div>` : ""}

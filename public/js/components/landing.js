@@ -1,28 +1,29 @@
 // Landing page explicativa. Se muestra al entrar (antes del login) en modo nube.
 // onStart() lleva al formulario de acceso.
+import { icon } from "../lib/icons.js";
 
 const FEATURES = [
-  { ico: "📷", t: "Escáner de platos", d: "Haz una foto y la IA estima calorías y macros al instante con visión artificial." },
-  { ico: "✦", t: "Coach IA", d: "Un entrenador-nutricionista que conoce tus macros y te guía. Dile lo que comes y lo registra solo." },
-  { ico: "◎", t: "Macros dinámicos", d: "Anillos de progreso de calorías, proteínas, carbos y grasas calculados a tu objetivo." },
-  { ico: "🏋", t: "Entrenamientos", d: "Rutinas a tu medida, base de ejercicios con técnica en vídeo y progreso de fuerza por ejercicio." },
+  { ico: icon('camera', 32), t: "Escáner de platos", d: "Haz una foto y la IA estima calorías y macros al instante con visión artificial." },
+  { ico: icon('message-square', 32), t: "Coach IA", d: "Un entrenador-nutricionista que conoce tus macros y te guía. Dile lo que comes y lo registra solo." },
+  { ico: icon('dashboard', 32), t: "Macros dinámicos", d: "Anillos de progreso de calorías, proteínas, carbos y grasas calculados a tu objetivo." },
+  { ico: icon('dumbbell', 32), t: "Entrenamientos", d: "Rutinas a tu medida, base de ejercicios con técnica en vídeo y progreso de fuerza por ejercicio." },
 ];
 
 export function renderLanding(onStart) {
   document.body.innerHTML = `
     <div class="landing">
       <header class="lp-nav">
-        <div class="lp-brand"><span class="brand-logo">◎</span> Nutveo</div>
+        <div class="lp-brand"><span class="brand-logo">${icon('nutveo-logo', 26)}</span> Nutveo</div>
         <button class="btn btn-ghost lp-login-btn" id="lp-login">Iniciar sesión</button>
       </header>
 
       <section class="lp-hero">
-        <div class="lp-badge">Tu salud, entrenamiento y nutrición · con IA</div>
+        <div class="lp-badge">Tu salud, entrenamiento y nutrición - con IA</div>
         <h1 class="lp-title">Controla tus <span class="lp-accent">calorías y macros</span><br>sin esfuerzo.</h1>
         <p class="lp-sub">Escanea tus platos con una foto, deja que el Coach IA te guíe y sigue tu progreso de nutrición y fuerza. Todo en una app, en modo oscuro y gratis.</p>
         <div class="lp-cta">
           <button class="btn btn-primary lp-start" id="lp-start">Comenzar gratis</button>
-          <a class="lp-scroll" href="#features">Ver cómo funciona ↓</a>
+          <a class="lp-scroll" href="#features">Ver cómo funciona ${icon('arrow-down', 14)}</a>
         </div>
         <div class="lp-rings">
           <div class="lp-ring" style="--c:var(--cal)">2680<small>kcal</small></div>
@@ -47,7 +48,7 @@ export function renderLanding(onStart) {
         <button class="btn btn-primary lp-start" id="lp-start2">Comenzar gratis</button>
       </section>
 
-      <footer class="lp-foot">Nutveo · hecho con ❤ para mejorar tu día a día</footer>
+      <footer class="lp-foot">Nutveo · hecho con ${icon('heart', 12)} para mejorar tu día a día</footer>
     </div>`;
 
   const go = () => {

@@ -320,16 +320,16 @@ export const store = {
     s.meals.forEach((m) => { byDate[m.date] = (byDate[m.date] || 0) + (m.calories || 0); });
     const hitGoal = goalCal > 0 && Object.values(byDate).some((c) => c >= goalCal * 0.9 && c <= goalCal * 1.1);
     return [
-      { id: "first", icon: "🍽️", label: "Primer registro", earned: s.meals.length >= 1 },
-      { id: "streak7", icon: "🔥", label: "Racha 7 días", earned: nut >= 7 },
-      { id: "streak30", icon: "🏅", label: "Racha 30 días", earned: nut >= 30 },
-      { id: "goal", icon: "🎯", label: "Objetivo diario cumplido", earned: hitGoal },
-      { id: "ai", icon: "📷", label: "Escáner con IA", earned: s.meals.some((m) => m.source === "ai") },
-      { id: "recipe", icon: "📗", label: "Receta propia creada", earned: (s.userRecipes || []).length >= 1 },
-      { id: "train1", icon: "🏋️", label: "Primer entreno", earned: s.sessions.length >= 1 },
-      { id: "train10", icon: "💪", label: "10 entrenos", earned: s.sessions.length >= 10 },
-      { id: "lift", icon: "⚡", label: "Primera serie registrada", earned: s.lifts.length >= 1 },
-      { id: "weigh", icon: "⚖️", label: "Peso registrado", earned: s.weights.length >= 1 },
+      { id: "first", icon: "utensils", label: "Primer registro", earned: s.meals.length >= 1 },
+      { id: "streak7", icon: "flame", label: "Racha 7 días", earned: nut >= 7 },
+      { id: "streak30", icon: "medal", label: "Racha 30 días", earned: nut >= 30 },
+      { id: "goal", icon: "target", label: "Objetivo diario cumplido", earned: hitGoal },
+      { id: "ai", icon: "camera", label: "Escáner con IA", earned: s.meals.some((m) => m.source === "ai") },
+      { id: "recipe", icon: "book", label: "Receta propia creada", earned: (s.userRecipes || []).length >= 1 },
+      { id: "train1", icon: "dumbbell", label: "Primer entreno", earned: s.sessions.length >= 1 },
+      { id: "train10", icon: "award", label: "10 entrenos", earned: s.sessions.length >= 10 },
+      { id: "lift", icon: "zap", label: "Primera serie registrada", earned: s.lifts.length >= 1 },
+      { id: "weigh", icon: "scale", label: "Peso registrado", earned: s.weights.length >= 1 },
     ];
   },
 
@@ -749,10 +749,10 @@ export const store = {
 };
 
 export const SLOTS = [
-  { id: "breakfast", label: "Desayuno", ico: "🌅" },
-  { id: "lunch", label: "Almuerzo", ico: "🍱" },
-  { id: "dinner", label: "Cena", ico: "🍽️" },
-  { id: "snacks", label: "Snacks", ico: "🍪" },
+  { id: "breakfast", label: "Desayuno", ico: "sunrise" },
+  { id: "lunch", label: "Almuerzo", ico: "sun" },
+  { id: "dinner", label: "Cena", ico: "moon" },
+  { id: "snacks", label: "Snacks", ico: "cookie" },
 ];
 
 export function sumMacros(meals) {

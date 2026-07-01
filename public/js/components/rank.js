@@ -1,5 +1,6 @@
 import { store } from "../store.js";
 import { TIERS, rankedExercises, rankExercise, overallRank } from "../lib/ranking.js";
+import { icon } from "../lib/icons.js";
 
 export function renderRank(root, { navigate }) {
   const profile = store.profile();
@@ -24,7 +25,7 @@ export function renderRank(root, { navigate }) {
       overall
         ? heroCard(overall)
         : `<div class="card rank-empty">
-            <div class="rank-empty-emoji">🏋️</div>
+            <div class="rank-empty-emoji">${icon('dumbbell', 56)}</div>
             <h3>Aún no tienes rango</h3>
             <p>Registra el peso que levantas en la pestaña <b>Entreno</b> y aquí verás tu nivel de Bronce a Leyenda.</p>
             <button class="btn btn-primary" id="go-train">Ir a Entreno</button>
@@ -36,7 +37,7 @@ export function renderRank(root, { navigate }) {
         ? `<div class="section-title" style="margin-top:24px">Por ejercicio</div>
            <div class="rank-list">${perExercise.map(rankRow).join("")}</div>
            <div class="card tiers-legend">
-             ${TIERS.map((t) => `<span class="tier-chip" style="--tc:${t.color}">${t.emoji} ${t.label}</span>`).join("")}
+             ${TIERS.map((t) => `<span class="tier-chip" style="--tc:${t.color}">${icon(t.icon, 14)} ${t.label}</span>`).join("")}
            </div>`
         : ""
     }
@@ -49,7 +50,7 @@ function heroCard(o) {
   const t = o.tier;
   return `
     <div class="card rank-hero" style="--tc:${t.color}">
-      <div class="rank-emblem">${t.emoji}</div>
+      <div class="rank-emblem">${icon(t.icon, 64)}</div>
       <div class="rank-hero-info">
         <div class="rank-hero-label">${t.label}</div>
         <div class="rank-hero-sub">Rango global · media de ${o.count} ejercicio(s)</div>
@@ -69,7 +70,7 @@ function rankRow(r) {
   return `
     <div class="card rank-row" style="--tc:${t.color}">
       <div class="rr-top">
-        <span class="rr-badge">${t.emoji} ${t.label}</span>
+        <span class="rr-badge">${icon(t.icon, 14)} ${t.label}</span>
         <span class="rr-ex">${r.exercise}</span>
         <span class="rr-1rm">${r.oneRM} kg <small>1RM est.</small></span>
       </div>
@@ -78,7 +79,7 @@ function rankRow(r) {
         ${
           r.nextTier
             ? `Para <b style="color:${r.nextTier.color}">${r.nextTier.label}</b>: ${r.nextWeight} kg (1RM)`
-            : `¡Rango máximo alcanzado! 🔥`
+            : `Rango maximo alcanzado! ${icon('flame', 14)}`
         }
       </div>
     </div>`;

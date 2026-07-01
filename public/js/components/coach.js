@@ -1,6 +1,7 @@
 import { store, sumMacros, SLOTS } from "../store.js";
 import { askCoach } from "../api.js";
 import { toast } from "./ui.js";
+import { icon } from "../lib/icons.js";
 
 // Chat con el Coach Nutricional IA. Mantiene el historial en memoria de sesion
 // y manda el contexto de macros del dia en cada peticion.
@@ -8,7 +9,7 @@ let history = [
   {
     role: "assistant",
     content:
-      "¡Hola! Soy tu Coach Nutricional 🤖 Puedo sugerirte recetas, ajustar tu menú o resolver dudas según tus macros de hoy. ¿En qué te ayudo?",
+      "¡Hola! Soy tu Coach Nutricional. Puedo sugerirte recetas, ajustar tu menú o resolver dudas según tus macros de hoy. ¿En qué te ayudo?",
   },
 ];
 
@@ -26,8 +27,8 @@ export function renderCoach(root) {
       </div>
       <div class="chat-log" id="log"></div>
       <div class="chat-input">
-        <input id="chat-text" type="text" placeholder="Escribe tu mensaje…" autocomplete="off" />
-        <button class="chat-send" id="chat-send">➤</button>
+        <input id="chat-text" type="text" placeholder="Escribe tu mensaje..." autocomplete="off" />
+        <button class="chat-send" id="chat-send">${icon('send', 20)}</button>
       </div>
     </div>`;
 
@@ -53,7 +54,7 @@ export function renderCoach(root) {
       const { text, added } = logMealsFromReply(reply);
       let finalText = text || "¡Hecho!";
       if (added.length) {
-        const lines = added.map((m) => `✅ Añadido: ${m.name} · ${m.calories} kcal (P${m.protein} C${m.carbs} G${m.fat})`).join("\n");
+        const lines = added.map((m) => `Añadido: ${m.name} - ${m.calories} kcal (P${m.protein} C${m.carbs} G${m.fat})`).join("\n");
         finalText = (text ? text + "\n\n" : "") + lines;
         toast(added.length === 1 ? "Comida añadida a tu diario" : `${added.length} comidas añadidas`);
       }
@@ -154,7 +155,7 @@ function paint(log) {
 function addTyping(log) {
   const el = document.createElement("div");
   el.className = "msg assistant typing";
-  el.textContent = "escribiendo…";
+  el.textContent = "escribiendo...";
   log.appendChild(el);
   log.scrollTop = log.scrollHeight;
   return el;

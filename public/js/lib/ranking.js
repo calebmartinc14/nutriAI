@@ -3,13 +3,13 @@
 // Es una estimación orientativa y motivadora, no un test de laboratorio.
 
 export const TIERS = [
-  { key: "bronce", label: "Bronce", color: "#cd7f32", emoji: "🥉" },
-  { key: "plata", label: "Plata", color: "#b8c2cc", emoji: "🥈" },
-  { key: "oro", label: "Oro", color: "#ffd700", emoji: "🥇" },
-  { key: "platino", label: "Platino", color: "#3fe0c5", emoji: "💠" },
-  { key: "diamante", label: "Diamante", color: "#5b8def", emoji: "💎" },
-  { key: "maestro", label: "Maestro", color: "#b06bff", emoji: "👑" },
-  { key: "leyenda", label: "Leyenda", color: "#ff6b6b", emoji: "🔥" },
+  { key: "bronce", label: "Bronce", color: "#cd7f32", icon: "medal" },
+  { key: "plata", label: "Plata", color: "#b8c2cc", icon: "medal" },
+  { key: "oro", label: "Oro", color: "#ffd700", icon: "medal" },
+  { key: "platino", label: "Platino", color: "#3fe0c5", icon: "diamond" },
+  { key: "diamante", label: "Diamante", color: "#5b8def", icon: "gem" },
+  { key: "maestro", label: "Maestro", color: "#b06bff", icon: "crown" },
+  { key: "leyenda", label: "Leyenda", color: "#ff6b6b", icon: "flame" },
 ];
 
 // Umbrales de ratio (1RM/peso corporal) para alcanzar, en orden:

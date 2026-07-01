@@ -58,7 +58,7 @@ function draw(root) {
                   <span class="wr-kg">${w.kg} kg</span>
                   <span class="wr-delta" style="color:${delta == null ? "var(--text-3)" : changeColor(delta, profile)}">
                     ${delta == null ? "" : fmtChange(delta)}</span>
-                  <button class="meal-del" data-del-w="${w.date}" title="Borrar">✕</button>
+                  <button class="meal-del" data-del-w="${w.date}" title="Borrar">${icon('x', 14)}</button>
                 </div>`;
               })
               .join("")
