@@ -1,5 +1,6 @@
 // Autenticación con Supabase: comprueba sesión y pinta la pantalla de login.
 import { getSupabase, CLOUD_ENABLED } from "./lib/supabase.js";
+import { icon } from "./lib/icons.js";
 
 export { CLOUD_ENABLED };
 
@@ -28,8 +29,8 @@ export function renderLogin(onLogin) {
   document.body.innerHTML = `
     <div class="auth-screen">
       <div class="auth-card">
-        <div class="auth-brand"><span class="brand-logo">◎</span> Nutveo</div>
-        <p class="auth-sub">Entra para sincronizar tus datos y competir con tus amigos 🏆</p>
+        <div class="auth-brand"><span class="brand-logo">${icon('nutveo-logo', 28)}</span> Nutveo</div>
+        <p class="auth-sub">Entra para sincronizar tus datos y competir con tus amigos ${icon('trophy', 14)}</p>
 
         <div class="field">
           <label>Nombre de usuario (visible en la liga)</label>
@@ -74,7 +75,7 @@ async function doEmail(mode, onLogin, msg) {
   if (mode === "signup" && !name) return msg("Elige un nombre de usuario");
 
   const sb = await getSupabase();
-  msg("Procesando…", false);
+  msg("Procesando...", false);
 
   if (mode === "signup") {
     const { data, error } = await sb.auth.signUp({

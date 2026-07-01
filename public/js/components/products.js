@@ -1,7 +1,8 @@
 import { store, SLOTS } from "../store.js";
-import { searchProducts as buscarProductos, getProductByBarcode } from "../api.js";
+import { openBarcodeScanner } from "./scanner.js";
 import { toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
+import { icon } from "../lib/icons.js";
 
 export function renderProducts(root) {
   root.innerHTML = `
@@ -106,7 +107,7 @@ function manualBarcode(onFound) {
 function card(p, i) {
   const thumb = p.img
     ? `<img class="prod-thumb" src="${p.img}" alt="" loading="lazy" onerror="this.style.display='none'">`
-    : `<div class="prod-thumb prod-ph">🛒</div>`;
+    : `<div class="prod-thumb prod-ph">${icon('shopping-cart', 20)}</div>`;
   return `
     <div class="card prod-item" data-i="${i}">
       ${thumb}
@@ -119,7 +120,7 @@ function card(p, i) {
           <button class="btn btn-primary prod-save" data-save="${i}">${t("common.add")}</button>
         </div>
       </div>
-      <button class="prod-plus" data-plus="${i}" title="Añadir">＋</button>
+      <button class="prod-plus" data-plus="${i}" title="A&ntilde;adir">${icon('plus', 20)}</button>
     </div>`;
 }
 

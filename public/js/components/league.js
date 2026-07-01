@@ -3,13 +3,14 @@ import { TIERS } from "../lib/ranking.js";
 import { store } from "../store.js";
 import * as cloud from "../cloud.js";
 import { toast } from "./ui.js";
+import { icon } from "../lib/icons.js";
 
 export function renderLeague(root) {
   if (!CLOUD_ENABLED) {
     root.innerHTML = `
       <div class="weight-head"><h2 class="page-title">Liga de amigos</h2></div>
       <div class="card rank-empty">
-        <div class="rank-empty-emoji">🌐</div>
+        <div class="rank-empty-emoji">${icon('globe', 56)}</div>
         <h3>Necesitas la versión en la nube</h3>
         <p>Para competir con tus amigos hay que activar el login (Supabase). Mientras uses la versión local, esta sección no está disponible.</p>
       </div>`;
@@ -21,7 +22,7 @@ export function renderLeague(root) {
 async function draw(root) {
   root.innerHTML = `
     <div class="weight-head">
-      <h2 class="page-title">Liga de amigos 🏆</h2>
+      <h2 class="page-title">Liga de amigos ${icon('trophy', 18)}</h2>
       <p class="page-sub">Compite con tus colegas por el mejor rango de fuerza.</p>
     </div>
 
@@ -42,14 +43,14 @@ async function draw(root) {
   root.querySelector("#lg-join-btn").addEventListener("click", async () => {
     const code = root.querySelector("#lg-join").value.trim();
     if (!code) return toast("Pon el código de la liga");
-    try { await cloud.joinLeague(code); toast("¡Te uniste a la liga! 🎉"); draw(root); }
+    try { await cloud.joinLeague(code); toast("Te uniste a la liga!"); draw(root); }
     catch (e) { toast(e.message || "No se pudo unir"); }
   });
 
   root.querySelector("#lg-create-btn").addEventListener("click", async () => {
     const name = root.querySelector("#lg-name").value.trim();
     if (!name) return toast("Pon un nombre para la liga");
-    try { const lg = await cloud.createLeague(name); toast(`Liga creada · código ${lg.code}`); draw(root); }
+    try { const lg = await cloud.createLeague(name); toast(`Liga creada - codigo ${lg.code}`); draw(root); }
     catch (e) { toast(e.message || "No se pudo crear"); }
   });
 
@@ -84,13 +85,13 @@ function leagueBlock(lg, board) {
 
 function boardRow(row, pos, isMe) {
   const tier = TIERS[row.rank_index] ?? TIERS[0];
-  const medal = pos === 1 ? "🥇" : pos === 2 ? "🥈" : pos === 3 ? "🥉" : `${pos}.`;
+  const medal = pos === 1 ? icon('medal', 16) : pos === 2 ? icon('medal', 16) : pos === 3 ? icon('medal', 16) : `${pos}.`;
   return `
     <div class="card board-row ${isMe ? "me" : ""}" style="--tc:${tier.color}">
       <span class="br-pos">${medal}</span>
       <span class="br-name">${escapeHtml(row.username ?? "—")}${isMe ? " (tú)" : ""}</span>
-      <span class="br-tier">${tier.emoji} ${tier.label}</span>
-      <span class="br-score">${row.sessions_total ?? 0} 🏋️</span>
+      <span class="br-tier">${icon(tier.icon, 14)} ${tier.label}</span>
+      <span class="br-score">${row.sessions_total ?? 0} ${icon('dumbbell', 14)}</span>
     </div>`;
 }
 

@@ -1,6 +1,7 @@
 import { store, computeTargets } from "../store.js";
 import { LANGS, getLang, setLang, t } from "../lib/i18n.js";
 import { toast } from "./ui.js";
+import { icon } from "../lib/icons.js";
 
 const ACTIVITIES = [
   { id: "sedentary", label: "Sedentario", desc: "Poco o nada" },
@@ -35,7 +36,7 @@ export function openOnboarding({ isEdit = false, onDone } = {}) {
   function renderForm() {
     backdrop.innerHTML = `
       <div class="modal">
-        <h3>${isEdit ? "Editar mi perfil" : "¡Bienvenido a Nutveo! 👋"}</h3>
+        <h3>${isEdit ? "Editar mi perfil" : "Bienvenido a Nutveo!"}</h3>
         <p class="sub">${isEdit ? "Ajusta tus datos y recalculamos tu plan." : "Cuéntanos sobre ti y calcularemos tus calorías y macros ideales."}</p>
 
         ${isEdit ? `
@@ -132,8 +133,8 @@ export function openOnboarding({ isEdit = false, onDone } = {}) {
     const goalLabel = GOALS.find((g) => g.id === profile.goal)?.label ?? "";
     backdrop.innerHTML = `
       <div class="modal plan-result">
-        <h3>Tu plan diario 🎯</h3>
-        <p class="sub">${goalLabel} · Mantenimiento estimado: ${t.maintenance} kcal</p>
+        <h3>Tu plan diario ${icon('target', 18)}</h3>
+        <p class="sub">${goalLabel} - Mantenimiento estimado: ${t.maintenance} kcal</p>
         <div class="plan-kcal">${t.calories}</div>
         <div class="sub">kcal objetivo / día</div>
         <div class="plan-macros">

@@ -84,8 +84,8 @@ function draw(root, ctx) {
     <div class="card backup-card">
       <p>${t("hist.backupText")}</p>
       <div class="btn-row">
-        <button class="btn btn-ghost" id="export-btn">${t("hist.export")}</button>
-        <button class="btn btn-ghost" id="import-btn">${t("hist.import")}</button>
+        <button class="btn btn-ghost" id="export-btn">${icon('download', 14)} ${t("hist.export")}</button>
+        <button class="btn btn-ghost" id="import-btn">${icon('upload', 14)} ${t("hist.import")}</button>
         <input type="file" id="import-file" accept="application/json,.json" class="hidden" />
       </div>
     </div>
@@ -165,7 +165,7 @@ function dayRow(d, dayLetter) {
         has
           ? `<span class="day-macros">P ${Math.round(d.totals.protein)} · C ${Math.round(d.totals.carbs)} · G ${Math.round(d.totals.fat)}</span>
              <span class="day-kcal">${Math.round(d.totals.calories)} kcal</span>
-             <span class="day-caret">▾</span>`
+             <span class="day-caret">${icon('chevron-down', 12)}</span>`
           : `<span class="day-empty">${t("hist.noRecords")}</span>`
       }
     </div>`;
@@ -175,7 +175,7 @@ function dayRow(d, dayLetter) {
         ${d.meals
           .map(
             (m) => `<div class="day-meal">
-              <span class="dm-slot">${SLOTS.find((s) => s.id === m.slot)?.ico ?? ""}</span>
+              <span class="dm-slot">${icon(SLOTS.find((s) => s.id === m.slot)?.ico ?? 'utensils', 15)}</span>
               <span class="dm-name">${escapeHtml(m.name)}</span>
               <span class="dm-kcal">${Math.round(m.calories)} kcal</span>
             </div>`

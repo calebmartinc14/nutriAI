@@ -3,6 +3,7 @@ import { getStatus } from "./api.js";
 import { CLOUD_ENABLED, getCurrentUser, renderLogin, signOut } from "./auth.js";
 import { renderLanding } from "./components/landing.js";
 import { t, applyI18n, getLocale } from "./lib/i18n.js";
+import { icon } from "./lib/icons.js";
 import * as cloud from "./cloud.js";
 import { renderDashboard } from "./components/dashboard.js";
 import { renderScanner } from "./components/scanner.js";
@@ -64,8 +65,8 @@ function renderCurrent(ctx) {
 
 function updateHeader() {
   const h = new Date().getHours();
-  document.getElementById("greeting").textContent =
-    h < 12 ? t("greet.morning") : h < 19 ? t("greet.afternoon") : t("greet.evening");
+  const greet = h < 12 ? t("greet.morning") : h < 19 ? t("greet.afternoon") : t("greet.evening");
+  document.getElementById("greeting").innerHTML = greet + ' ' + icon('hand', 16);
   const dateLabel = new Intl.DateTimeFormat(getLocale(), { weekday: "long", day: "numeric", month: "long" }).format(new Date());
   document.getElementById("date-label").textContent =
     dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1);
@@ -76,11 +77,11 @@ async function updateAiBadge() {
   const status = await getStatus();
   if (status.demo) {
     badge.className = "badge badge-muted";
-    badge.textContent = "🧪 Demo";
+    badge.innerHTML = `${icon('flask', 14)} Demo`;
     badge.title = "Sin clave de Gemini: se usan datos simulados";
   } else {
     badge.className = "badge badge-credits";
-    badge.textContent = "🤖 IA";
+    badge.innerHTML = `${icon('bot', 14)} IA`;
     badge.title = `IA real activa (${status.model})`;
   }
 }
@@ -91,7 +92,7 @@ function addSignOutButton() {
   const btn = document.createElement("button");
   btn.id = "signout";
   btn.className = "nav-item";
-  btn.innerHTML = `<span class="ni-ico">⎋</span> <span class="ni-tx" data-i18n="nav.signout">Cerrar sesión</span>`;
+  btn.innerHTML = `<span class="ni-ico">${icon('log-out', 20)}</span> <span class="ni-tx" data-i18n="nav.signout">Cerrar sesión</span>`;
   btn.addEventListener("click", signOut);
   foot.insertBefore(btn, foot.firstChild);
 }

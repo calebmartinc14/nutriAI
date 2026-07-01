@@ -4,6 +4,7 @@ import { store } from "../store.js";
 import { openManualModal } from "./manual.js";
 import { toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
+import { icon } from "../lib/icons.js";
 
 // Pantalla de escaner de comida por foto (IA). Uso ilimitado.
 export function renderScanner(root, { navigate, refresh, params }) {
@@ -15,7 +16,7 @@ export function renderScanner(root, { navigate, refresh, params }) {
 function pickerView(slot) {
   return `
     <div class="scanner">
-      <div class="scanner-ico">🍽️</div>
+      <div class="scanner-ico">${icon('utensils', 64)}</div>
       <h2>${t("scan.title")}</h2>
       <p>${t("scan.subtitle")}</p>
 
@@ -30,8 +31,8 @@ function pickerView(slot) {
       <input id="file-camera" type="file" accept="image/*" capture="environment" class="hidden" />
       <input id="file-gallery" type="file" accept="image/*" class="hidden" />
 
-      <button class="btn btn-primary btn-block" id="btn-camera">${t("scan.camera")}</button>
-      <button class="btn btn-ghost btn-block" id="btn-gallery">${t("scan.gallery")}</button>
+      <button class="btn btn-primary btn-block" id="btn-camera">${icon('camera', 16)} ${t("scan.camera")}</button>
+      <button class="btn btn-ghost btn-block" id="btn-gallery">${icon('image', 16)} ${t("scan.gallery")}</button>
     </div>`;
 }
 
@@ -132,7 +133,7 @@ function renderResult(root, { analysis, photo, slot }, ctx) {
 function renderError(root, message, ctx) {
   root.innerHTML = `
     <div class="scanner">
-      <div class="scanner-ico">⚠️</div>
+      <div class="scanner-ico">${icon('alert-triangle', 64)}</div>
       <h2>${t("scan.oops")}</h2>
       <p>${escapeHtml(message)}</p>
       <button class="btn btn-primary btn-block" id="retry">${t("common.retry")}</button>

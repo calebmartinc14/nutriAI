@@ -1,6 +1,7 @@
 import { store } from "../store.js";
 import { loadExerciseDB, muscleOptions, equipOptions, MUSCLE_LABELS, EQUIP_LABELS, IMG_BASE, youtubeSearch } from "../lib/exercise_db.js";
 import { toast } from "./ui.js";
+import { icon } from "../lib/icons.js";
 
 const mLabel = (k) => MUSCLE_LABELS[k] || k;
 const eLabel = (k) => EQUIP_LABELS[k] || k;
@@ -33,9 +34,9 @@ export async function openExerciseExplorer({ onAdd } = {}) {
     modal.innerHTML = `
       <div class="ex-head">
         <h3>Base de ejercicios</h3>
-        <button class="ex-close" id="ex-x">✕</button>
+        <button class="ex-close" id="ex-x">${icon('x', 18)}</button>
       </div>
-      <input class="ex-search" id="ex-q" type="text" placeholder="Buscar ejercicio…" value="${attr(q)}" />
+      <input class="ex-search" id="ex-q" type="text" placeholder="Buscar ejercicio..." value="${attr(q)}" />
       <div class="ex-filters">
         <select id="ex-m">
           <option value="">Todos los músculos</option>
@@ -67,8 +68,8 @@ export async function openExerciseExplorer({ onAdd } = {}) {
 
   function card(e) {
     const thumb = e.images?.length
-      ? `<img class="ex-thumb" src="${IMG_BASE}${e.images[0]}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ex-thumb ex-thumb-ph" style="display:none">🏋️</div>`
-      : `<div class="ex-thumb ex-thumb-ph">🏋️</div>`;
+      ? `<img class="ex-thumb" src="${IMG_BASE}${e.images[0]}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="ex-thumb ex-thumb-ph" style="display:none">${icon('dumbbell', 22)}</div>`
+      : `<div class="ex-thumb ex-thumb-ph">${icon('dumbbell', 22)}</div>`;
     return `
       <div class="ex-item" data-id="${attr(e.id)}">
         ${thumb}
@@ -77,8 +78,8 @@ export async function openExerciseExplorer({ onAdd } = {}) {
           <div class="ex-item-meta">${mLabel(e.muscle)} · ${eLabel(e.equipment)}</div>
         </div>
         <div class="ex-item-actions">
-          <button class="ex-btn-play" data-play="${attr(e.id)}" title="Ver técnica">▶</button>
-          <button class="ex-btn-add" data-add="${attr(e.id)}" title="Añadir">＋</button>
+          <button class="ex-btn-play" data-play="${attr(e.id)}" title="Ver técnica">${icon('play', 16)}</button>
+          <button class="ex-btn-add" data-add="${attr(e.id)}" title="Añadir">${icon('plus', 16)}</button>
         </div>
       </div>`;
   }
@@ -114,18 +115,18 @@ export function openMiniPlayer(ex) {
   pip.innerHTML = `
     <div class="pip-head">
       <span class="pip-title">${esc(ex.name)}</span>
-      <button class="pip-x" title="Cerrar">✕</button>
+      <button class="pip-x" title="Cerrar">${icon('x', 15)}</button>
     </div>
     <div class="pip-body">
       ${hasImgs
         ? `<img class="pip-img" src="${IMG_BASE}${ex.images[0]}" alt="" onerror="this.closest('.pip').querySelector('.pip-fallback').style.display='block';this.style.display='none'">`
         : ""}
       <div class="pip-fallback" style="${hasImgs ? "display:none" : ""}">
-        <div class="pip-fb-emoji">🎥</div>
+        <div class="pip-fb-emoji">${icon('camera', 40)}</div>
         <p>Mira la técnica en vídeo:</p>
       </div>
     </div>
-    <a class="pip-yt" href="${youtubeSearch(ex.name)}" target="_blank" rel="noopener">▶ Buscar en YouTube</a>`;
+    <a class="pip-yt" href="${youtubeSearch(ex.name)}" target="_blank" rel="noopener">${icon('play', 14)} Buscar en YouTube</a>`;
   document.body.appendChild(pip);
 
   pip.querySelector(".pip-x").addEventListener("click", () => { pip.remove(); pip = null; });

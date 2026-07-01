@@ -93,9 +93,11 @@ const A = {
   queso: { kcal: 350, p: 25, c: 1.3, f: 28 },
 };
 
+const RECIPE_ICONS = { r1: "utensils", r2: "award", r3: "sunrise", r4: "utensils", r5: "sun" };
+
 export const RECIPES = [
   {
-    id: "r1", titulo: "Bowl de pollo y arroz", comida: "almuerzo", emoji: "🍚",
+    id: "r1", titulo: "Bowl de pollo y arroz", comida: "almuerzo", icon: "utensils",
     pasos: ["Cocina el arroz.", "Haz el pollo a la plancha.", "Saltea las verduras con el aceite.", "Monta el bowl y añade el aguacate."],
     ingredientes: [
       { nombre: "Pollo", prod: A.pollo, rol: "protein", w: 1 },
@@ -105,7 +107,7 @@ export const RECIPES = [
     ],
   },
   {
-    id: "r2", titulo: "Salmón con patata", comida: "cena", emoji: "🐟",
+    id: "r2", titulo: "Salmón con patata", comida: "cena", icon: "award",
     pasos: ["Hornea el salmón.", "Cuece o asa la patata.", "Aliña con aceite y verduras."],
     ingredientes: [
       { nombre: "Salmón", prod: A.salmon, rol: "fat", w: 1 },
@@ -115,7 +117,7 @@ export const RECIPES = [
     ],
   },
   {
-    id: "r3", titulo: "Avena proteica con plátano", comida: "desayuno", emoji: "🥣",
+    id: "r3", titulo: "Avena proteica con plátano", comida: "desayuno", icon: "sunrise",
     pasos: ["Mezcla la avena con el yogur.", "Añade el plátano troceado.", "Top de mantequilla de cacahuete (aceite/grasa)."],
     ingredientes: [
       { nombre: "Yogur griego", prod: A.yogurG, rol: "protein", w: 1 },
@@ -125,7 +127,7 @@ export const RECIPES = [
     ],
   },
   {
-    id: "r4", titulo: "Pasta con ternera", comida: "almuerzo", emoji: "🍝",
+    id: "r4", titulo: "Pasta con ternera", comida: "almuerzo", icon: "utensils",
     pasos: ["Cuece la pasta.", "Sofríe la ternera con tomate.", "Mezcla y sirve."],
     ingredientes: [
       { nombre: "Ternera magra", prod: A.ternera, rol: "fat", w: 1 },
@@ -135,7 +137,7 @@ export const RECIPES = [
     ],
   },
   {
-    id: "r5", titulo: "Tostadas de huevo y aguacate", comida: "desayuno", emoji: "🥑",
+    id: "r5", titulo: "Tostadas de huevo y aguacate", comida: "desayuno", icon: "sun",
     pasos: ["Tuesta el pan.", "Haz los huevos.", "Machaca el aguacate y monta."],
     ingredientes: [
       { nombre: "Huevo", prod: A.huevo, rol: "protein", w: 1 },

@@ -4,6 +4,7 @@ import { openManualModal } from "./manual.js";
 import { askCoach } from "../api.js";
 import { toast } from "./ui.js";
 import { t, slotLabel, dayLetters } from "../lib/i18n.js";
+import { icon } from "../lib/icons.js";
 
 export function renderDashboard(root, { navigate, refresh }) {
   const goals = store.goals();
@@ -74,7 +75,7 @@ export function renderDashboard(root, { navigate, refresh }) {
 
     <div class="meals-title-row">
       <span class="meals-title">${t("dash.mealsToday")}</span>
-      <button class="wk-toggle-def" id="repeat-yesterday">${t("dash.repeatYesterday")}</button>
+      <button class="wk-toggle-def" id="repeat-yesterday">${icon('refresh-cw', 14)} ${t("dash.repeatYesterday")}</button>
     </div>
     <div class="meals-grid">
       ${SLOTS.map((slot) => renderSlot(slot, mealsBySlot[slot.id])).join("")}
@@ -132,7 +133,7 @@ async function openWeeklyReview() {
 
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
-  backdrop.innerHTML = `<div class="modal"><div class="rec-detail-head"><h3>${t("wr.title")}</h3><button class="ex-close" id="wr-x">✕</button></div><div id="wr-body"><div class="spinner" style="margin:24px auto"></div></div></div>`;
+  backdrop.innerHTML = `<div class="modal"><div class="rec-detail-head"><h3>${icon('sparkles', 16)} ${t("wr.title")}</h3><button class="ex-close" id="wr-x">${icon('x', 18)}</button></div><div id="wr-body"><div class="spinner" style="margin:24px auto"></div></div></div>`;
   document.body.appendChild(backdrop);
   backdrop.addEventListener("click", (e) => { if (e.target === backdrop) backdrop.remove(); });
   backdrop.querySelector("#wr-x").addEventListener("click", () => backdrop.remove());
@@ -162,10 +163,10 @@ function renderSlot(slot, meals) {
   return `
     <div class="card meal-card">
       <div class="meal-head">
-        <span class="meal-ico">${slot.ico}</span>
+        <span class="meal-ico">${icon(slot.ico, 18)}</span>
         <span class="meal-slot">${slotLabel(slot.id)}</span>
         <span class="meal-kcal">${total} kcal</span>
-        <button class="meal-add" data-add-slot="${slot.id}" title="${t("dash.addManual")}">＋</button>
+        <button class="meal-add" data-add-slot="${slot.id}" title="${t("dash.addManual")}">${icon('plus', 20)}</button>
       </div>
       ${
         meals.length === 0
@@ -178,7 +179,7 @@ function renderSlot(slot, meals) {
 function renderMeal(m) {
   const thumb = m.photo
     ? `<img class="meal-thumb" src="${m.photo}" alt="">`
-    : `<div class="meal-thumb">🍴</div>`;
+    : `<div class="meal-thumb">${icon('utensils', 20)}</div>`;
   const aiTag = m.source === "ai" ? `<span class="tag-ai">IA</span>` : "";
   return `
     <div class="meal-item">
@@ -188,8 +189,8 @@ function renderMeal(m) {
         <div class="meal-macros">P ${Math.round(m.protein)}g · C ${Math.round(m.carbs)}g · G ${Math.round(m.fat)}g</div>
       </div>
       <div class="meal-item-kcal">${Math.round(m.calories)}</div>
-      <button class="meal-edit" data-edit="${m.id}" title="${t("manual.editTitle")}">✎</button>
-      <button class="meal-del" data-del="${m.id}" title="${t("common.delete")}">✕</button>
+      <button class="meal-edit" data-edit="${m.id}" title="${t("manual.editTitle")}">${icon('edit-3', 16)}</button>
+      <button class="meal-del" data-del="${m.id}" title="${t("common.delete")}">${icon('x', 16)}</button>
     </div>`;
 }
 
@@ -199,7 +200,7 @@ function waterCard() {
   const pct = Math.min(100, Math.round((ml / goal) * 100));
   return `
     <div class="card water-card">
-      <div class="water-head"><span class="section-title" style="margin:0">${t("dash.water")}</span><span class="water-val">${ml} / ${goal} ml</span></div>
+      <div class="water-head"><span class="section-title" style="margin:0">${icon('droplet', 16)} ${t("dash.water")}</span><span class="water-val">${ml} / ${goal} ml</span></div>
       <div class="water-bar"><div class="water-fill" style="width:${pct}%"></div></div>
       <div class="water-btns">
         <button data-water="250">+250</button>
@@ -218,12 +219,12 @@ function progressCard() {
     <div class="section-title" style="margin-top:28px">${t("dash.progress")}</div>
     <div class="card prog-card">
       <div class="prog-row">
-        <div class="prog-streak">🔥 <b>${streak}</b> <span>${t("dash.streak", { n: "", days: daysWord }).trim()}</span></div>
-        <button class="btn btn-ghost prog-review" id="weekly-review">${t("dash.weeklyReview")}</button>
+        <div class="prog-streak">${icon('flame', 18)} <b>${streak}</b> <span>${t("dash.streak", { n: "", days: daysWord }).trim()}</span></div>
+        <button class="btn btn-ghost prog-review" id="weekly-review">${icon('sparkles', 14)} ${t("dash.weeklyReview")}</button>
       </div>
       <div class="badges-title">${t("dash.achievements", { earned, total: badges.length })}</div>
       <div class="badges">
-        ${badges.map((a) => `<span class="badge-chip ${a.earned ? "earned" : ""}" title="${t("ach." + a.id)}">${a.icon}</span>`).join("")}
+        ${badges.map((a) => `<span class="badge-chip ${a.earned ? "earned" : ""}" title="${t("ach." + a.id)}">${icon(a.icon, 18)}</span>`).join("")}
       </div>
     </div>`;
 }

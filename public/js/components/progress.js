@@ -1,5 +1,6 @@
 import { store } from "../store.js";
 import { t, getLocale } from "../lib/i18n.js";
+import { icon } from "../lib/icons.js";
 
 // Progreso de fuerza por ejercicio: 1RM estimado (Epley) a lo largo del tiempo.
 let selected = null;
@@ -12,7 +13,7 @@ export function renderProgress(root) {
     root.innerHTML = `
       <div class="weight-head"><h2 class="page-title">${t("prog.title")}</h2></div>
       <div class="card rank-empty">
-        <div class="rank-empty-emoji">📈</div>
+        <div class="rank-empty-emoji">${icon('trending-up', 56)}</div>
         <h3>${t("prog.noData")}</h3>
         <p>${t("prog.noDataText")}</p>
       </div>`;
