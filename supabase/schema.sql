@@ -1,5 +1,5 @@
 -- ===========================================================================
--- NutriAI · Esquema de base de datos para Supabase
+-- Nutveo · Esquema de base de datos para Supabase
 -- Pega TODO esto en: Supabase → SQL Editor → New query → Run.
 -- Crea las tablas, la seguridad por usuario (RLS) y el sistema de ligas.
 -- ===========================================================================
@@ -68,6 +68,30 @@ create table if not exists league_members (
   primary key (league_id, user_id)
 );
 
+-- ---------- FUNCIÓN SEGURA para unirse a una liga por código ----------
+-- Valida el código antes de insertar. Sin esta función, cualquier usuario
+-- autenticado podría insertarse directamente en league_members con cualquier
+-- league_id, saltándose la validación del código.
+create or replace function join_league_by_code(p_code text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_league_id uuid;
+begin
+  select id into v_league_id from leagues where upper(code) = upper(p_code);
+  if v_league_id is null then
+    raise exception 'Código de liga no válido';
+  end if;
+  insert into league_members (league_id, user_id)
+  values (v_league_id, auth.uid())
+  on conflict (league_id, user_id) do nothing;
+  return v_league_id;
+end;
+$$;
+
 -- ===========================================================================
 -- ROW LEVEL SECURITY
 -- ===========================================================================
@@ -81,19 +105,32 @@ alter table leagues       enable row level security;
 alter table league_members enable row level security;
 
 -- Datos privados: cada usuario solo accede a lo suyo.
+drop policy if exists "own profiles"  on profiles;
 create policy "own profiles"  on profiles  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own meals"     on meals;
 create policy "own meals"     on meals     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own weights"   on weights;
 create policy "own weights"   on weights   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own lifts"     on lifts;
 create policy "own lifts"     on lifts     for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+drop policy if exists "own sessions"  on sessions;
 create policy "own sessions"  on sessions  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Stats públicas: cualquiera autenticado las LEE (leaderboard); solo el dueño escribe.
+drop policy if exists "read stats"    on public_stats;
 create policy "read stats"    on public_stats for select using (auth.role() = 'authenticated');
+drop policy if exists "write stats"   on public_stats;
 create policy "write stats"   on public_stats for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- Ligas: cualquiera autenticado lee y crea; membresías propias.
+drop policy if exists "read leagues"  on leagues;
 create policy "read leagues"  on leagues for select using (auth.role() = 'authenticated');
+drop policy if exists "create leagues" on leagues;
 create policy "create leagues" on leagues for insert with check (auth.uid() = owner_id);
+drop policy if exists "read members"  on league_members;
 create policy "read members"  on league_members for select using (auth.role() = 'authenticated');
-create policy "join leagues"  on league_members for insert with check (auth.uid() = user_id);
+-- Las inserciones directas en league_members están deshabilitadas.
+-- Solo se puede unir a una liga mediante la función join_league_by_code(code),
+-- que valida que el código de la liga existe antes de insertar.
+drop policy if exists "leave leagues" on league_members;
 create policy "leave leagues" on league_members for delete using (auth.uid() = user_id);

@@ -12,7 +12,7 @@ export function renderLanding(onStart) {
   document.body.innerHTML = `
     <div class="landing">
       <header class="lp-nav">
-        <div class="lp-brand"><span class="brand-logo">◎</span> NutriAI</div>
+        <div class="lp-brand"><span class="brand-logo">◎</span> Nutveo</div>
         <button class="btn btn-ghost lp-login-btn" id="lp-login">Iniciar sesión</button>
       </header>
 
@@ -47,7 +47,7 @@ export function renderLanding(onStart) {
         <button class="btn btn-primary lp-start" id="lp-start2">Comenzar gratis</button>
       </section>
 
-      <footer class="lp-foot">NutriAI · hecho con ❤ para mejorar tu día a día</footer>
+      <footer class="lp-foot">Nutveo · hecho con ❤ para mejorar tu día a día</footer>
     </div>`;
 
   const go = () => {

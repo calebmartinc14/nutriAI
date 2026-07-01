@@ -1,5 +1,5 @@
 -- ===========================================================================
--- NutriAI · Tablas OPCIONALES de los módulos Productos / Recetas / Entreno
+-- Nutveo · Tablas OPCIONALES de los módulos Productos / Recetas / Entreno
 -- ---------------------------------------------------------------------------
 -- IMPORTANTE: la app YA FUNCIONA sin esto:
 --   · Productos -> Open Food Facts (en vivo) + se añaden a tu diario (tabla meals)

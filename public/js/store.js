@@ -5,13 +5,13 @@
 
 import { rankedExercises, rankExercise, overallRank } from "./lib/ranking.js";
 
-let KEY = "nutriai.v1";
+let KEY = "nutveo.v1";
 const DEFAULT_GOALS = { calories: 2200, protein: 150, carbs: 230, fat: 70, maintenance: 2200 };
 
 // Espacio de nombres por usuario (para no mezclar datos de varias cuentas
 // en el mismo navegador). Sin usuario => clave local generica.
 function setNamespace(userId) {
-  KEY = userId ? `nutriai.v1.${userId}` : "nutriai.v1";
+  KEY = userId ? `nutveo.v1.${userId}` : "nutveo.v1";
 }
 
 // Handler de sincronizacion con la nube. cloud.js lo registra tras el login.
@@ -539,18 +539,27 @@ export const store = {
 
   importData(obj) {
     if (!obj || typeof obj !== "object") throw new Error("Archivo no válido");
-    // Validacion minima de forma
+
+    const warn = (field) => console.warn(`importData: campo "${field}" no encontrado o inválido, usando valor por defecto`);
+
     const clean = {
       goals: obj.goals ?? DEFAULT_GOALS,
-      meals: Array.isArray(obj.meals) ? obj.meals : [],
-      weights: Array.isArray(obj.weights) ? obj.weights : [],
+      meals: Array.isArray(obj.meals) ? obj.meals : (warn("meals"), []),
+      weights: Array.isArray(obj.weights) ? obj.weights : (warn("weights"), []),
       trainingDays: obj.trainingDays ?? 3,
-      lifts: Array.isArray(obj.lifts) ? obj.lifts : [],
-      sessions: Array.isArray(obj.sessions) ? obj.sessions : [],
-      customExercises: obj.customExercises ?? {},
-      hiddenExercises: obj.hiddenExercises ?? {},
+      lifts: Array.isArray(obj.lifts) ? obj.lifts : (warn("lifts"), []),
+      sessions: Array.isArray(obj.sessions) ? obj.sessions : (warn("sessions"), []),
+      customExercises: obj.customExercises ?? (warn("customExercises"), {}),
+      hiddenExercises: obj.hiddenExercises ?? (warn("hiddenExercises"), {}),
+      customRoutines: Array.isArray(obj.customRoutines) ? obj.customRoutines : (warn("customRoutines"), []),
+      hideDefaultRoutine: obj.hideDefaultRoutine ?? false,
+      lang: obj.lang ?? null,
+      favorites: Array.isArray(obj.favorites) ? obj.favorites : (warn("favorites"), []),
+      userRecipes: Array.isArray(obj.userRecipes) ? obj.userRecipes : (warn("userRecipes"), []),
+      water: obj.water && typeof obj.water === "object" ? obj.water : (warn("water"), {}),
       profile: obj.profile ?? null,
       onboarded: obj.onboarded ?? true,
+      username: obj.username ?? null,
     };
     save(clean);
   },
