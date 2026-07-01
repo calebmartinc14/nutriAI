@@ -136,7 +136,7 @@ async function initApp() {
 }
 
 // Al cambiar de idioma (desde Mi perfil), re-traduce y refresca cabecera/vista.
-window.addEventListener("nutriai-lang", () => {
+window.addEventListener("nutveo-lang", () => {
   applyI18n(document);
   updateHeader();
   refresh();

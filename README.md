@@ -1,4 +1,4 @@
-# NutriAI — Web (local) 🥗
+# Nutveo — Web (local) 🥗
 
 Versión web del tracker de macros con IA. Pensada para correr **en tu máquina**
 sin montar nada en la nube. Frontend en HTML/CSS/JS puro (sin build step) +

@@ -122,7 +122,7 @@ function draw(root, ctx) {
     const blob = new Blob([data], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `nutriai-backup-${todayKey()}.json`;
+    a.download = `nutveo-backup-${todayKey()}.json`;
     a.click();
     URL.revokeObjectURL(a.href);
     toast(t("hist.downloaded"));

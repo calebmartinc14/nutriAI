@@ -1,7 +1,7 @@
 {
-  "name": "nutriai-web",
+  "name": "nutveo-web",
   "version": "0.1.0",
-  "description": "Tracker de macros y calorias con IA - version web local",
+  "description": "Nutveo — Tracker de macros y calorías con IA",
   "type": "module",
   "scripts": {
     "start": "node server.js",

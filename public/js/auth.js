@@ -28,7 +28,7 @@ export function renderLogin(onLogin) {
   document.body.innerHTML = `
     <div class="auth-screen">
       <div class="auth-card">
-        <div class="auth-brand"><span class="brand-logo">◎</span> NutriAI</div>
+        <div class="auth-brand"><span class="brand-logo">◎</span> Nutveo</div>
         <p class="auth-sub">Entra para sincronizar tus datos y competir con tus amigos 🏆</p>
 
         <div class="field">

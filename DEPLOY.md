@@ -1,4 +1,4 @@
-# 🚀 Publicar NutriAI online (login + nube + liga de amigos)
+# 🚀 Publicar Nutveo online (login + nube + liga de amigos)
 
 Guía paso a paso. Todo con planes **gratuitos**. Tiempo estimado: ~30-45 min.
 
@@ -9,7 +9,7 @@ Guía paso a paso. Todo con planes **gratuitos**. Tiempo estimado: ~30-45 min.
 
 ## 1) Crear el proyecto en Supabase
 1. Entra en **https://supabase.com** → *Start your project* → inicia sesión con GitHub.
-2. *New project* → ponle nombre (ej. `nutriai`), elige una contraseña de BD y la región más cercana.
+2. *New project* → ponle nombre (ej. `nutveo`), elige una contraseña de BD y la región más cercana.
 3. Espera ~2 min a que se cree.
 
 ## 2) Crear las tablas
@@ -54,7 +54,7 @@ Recomendado: **Cloudflare Pages** o **Vercel** (ambos gratis).
    - **Framework preset:** None
    - **Build command:** (vacío)
    - **Build output directory:** `web/public`
-4. *Deploy*. Te dará una URL pública tipo `https://nutriai.pages.dev`.
+4. *Deploy*. Te dará una URL pública tipo `https://nutveo.pages.dev`.
 
 > Nota: con este hosting estático, el servidor local `server.js` no se usa; las
 > llamadas de IA van a la Edge Function de Supabase (paso 5).

@@ -7,7 +7,7 @@
 
 const DB_URL = "https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/dist/exercises.json";
 export const IMG_BASE = "https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises/";
-const CACHE_KEY = "nutriai.exdb.v1";
+const CACHE_KEY = "nutveo.exdb.v1";
 const CACHE_TTL = 7 * 24 * 3600 * 1000; // 7 días
 
 // Etiquetas en español para los filtros.

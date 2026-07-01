@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       });
       if (body.hacendado) params.set("brands_tags", "hacendado");
       const r = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`, {
-        headers: { "User-Agent": "NutriAI/1.0 (app de nutrición)" },
+        headers: { "User-Agent": "Nutveo/1.0 (app de nutrición)" },
       });
       if (!r.ok) return json({ error: "Open Food Facts no disponible" }, 502);
       const data = await r.json();
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
       const code = String(body.barcode || "").replace(/\D/g, "");
       if (!code) return json({ error: "Código no válido" }, 400);
       const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=code,product_name,brands,image_front_small_url,nutriments`, {
-        headers: { "User-Agent": "NutriAI/1.0 (app de nutrición)" },
+        headers: { "User-Agent": "Nutveo/1.0 (app de nutrición)" },
       });
       if (!r.ok) return json({ error: "Open Food Facts no disponible" }, 502);
       const data = await r.json();

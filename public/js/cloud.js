@@ -50,6 +50,13 @@ export async function pullAll(user) {
     sessions: (sessions.data ?? []).map((x) => ({ id: x.id, date: x.date, focus: x.focus })),
   });
 
+  // Propaga el idioma remoto al módulo i18n (variable de módulo).
+  const remoteLang = store.lang();
+  if (remoteLang) {
+    const { setLang } = await import("./lib/i18n.js");
+    setLang(remoteLang);
+  }
+
   // Asegura que el nombre y stats existan en la nube (primer login).
   store.setUsername(username);
   await push("public_stats", "upsert", store.publicStatsRow());
@@ -95,9 +102,9 @@ export async function createLeague(name) {
 
 export async function joinLeague(code) {
   const sb = await getSupabase();
-  const { data: league, error } = await sb.from("leagues").select("*").eq("code", code.toUpperCase()).maybeSingle();
-  if (error || !league) throw new Error("No existe una liga con ese código");
-  await sb.from("league_members").upsert({ league_id: league.id, user_id: USER_ID }, { onConflict: "league_id,user_id" });
+  const { data: leagueId, error } = await sb.rpc("join_league_by_code", { p_code: code });
+  if (error) throw error;
+  const { data: league } = await sb.from("leagues").select("*").eq("id", leagueId).single();
   return league;
 }
 

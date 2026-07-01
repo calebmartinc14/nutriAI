@@ -244,7 +244,7 @@ app.post("/api/product-search", async (req, res) => {
     });
     if (hacendado) params.set("brands_tags", "hacendado");
     const r = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`, {
-      headers: { "User-Agent": "NutriAI/1.0 (app de nutricion)" },
+      headers: { "User-Agent": "Nutveo/1.0 (app de nutricion)" },
     });
     if (!r.ok) return res.status(502).json({ error: "Open Food Facts no disponible" });
     const data = await r.json();
@@ -303,7 +303,7 @@ app.post("/api/product-barcode", async (req, res) => {
     const code = String(req.body?.barcode || "").replace(/\D/g, "");
     if (!code) return res.status(400).json({ error: "Código no válido" });
     const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=code,product_name,brands,image_front_small_url,nutriments`, {
-      headers: { "User-Agent": "NutriAI/1.0 (app de nutricion)" },
+      headers: { "User-Agent": "Nutveo/1.0 (app de nutricion)" },
     });
     if (!r.ok) return res.status(502).json({ error: "Open Food Facts no disponible" });
     const data = await r.json();
@@ -326,7 +326,7 @@ app.get("/api/status", (_req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n  NutriAI corriendo en  http://localhost:${PORT}`);
+  console.log(`\n  Nutveo corriendo en  http://localhost:${PORT}`);
   console.log(`  Modo IA: ${DEMO_MODE ? "DEMO (sin clave - macros simulados)" : `REAL (${GEMINI_MODEL})`}\n`);
 });
 

@@ -35,7 +35,7 @@ export function openOnboarding({ isEdit = false, onDone } = {}) {
   function renderForm() {
     backdrop.innerHTML = `
       <div class="modal">
-        <h3>${isEdit ? "Editar mi perfil" : "¡Bienvenido a NutriAI! 👋"}</h3>
+        <h3>${isEdit ? "Editar mi perfil" : "¡Bienvenido a Nutveo! 👋"}</h3>
         <p class="sub">${isEdit ? "Ajusta tus datos y recalculamos tu plan." : "Cuéntanos sobre ti y calcularemos tus calorías y macros ideales."}</p>
 
         ${isEdit ? `
@@ -98,7 +98,7 @@ export function openOnboarding({ isEdit = false, onDone } = {}) {
           if (key === "lang") {
             // Cambia el idioma al instante (sin recargar).
             setLang(chip.dataset.lang);
-            window.dispatchEvent(new Event("nutriai-lang"));
+            window.dispatchEvent(new Event("nutveo-lang"));
             return;
           }
           sel[key] = chip.dataset.val;
