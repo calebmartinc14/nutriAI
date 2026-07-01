@@ -60,6 +60,21 @@ async function gemini(systemText: string, parts: unknown[], generationConfig: Re
   return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
 }
 
+// Verifica que quien llama es un USUARIO autenticado real (no solo la anon key).
+// Evita que alguien con la URL gaste tu cuota de Gemini.
+async function verifyUser(req: Request): Promise<boolean> {
+  const SB_URL = Deno.env.get("SUPABASE_URL");
+  const SB_ANON = Deno.env.get("SUPABASE_ANON_KEY");
+  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+  if (!token || !SB_URL || !SB_ANON || token === SB_ANON) return false;
+  try {
+    const r = await fetch(`${SB_URL}/auth/v1/user`, { headers: { Authorization: `Bearer ${token}`, apikey: SB_ANON } });
+    return r.ok;
+  } catch {
+    return false;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
@@ -68,6 +83,9 @@ Deno.serve(async (req) => {
   const action = body.action ?? "status";
 
   if (action === "status") return json({ demo: DEMO, model: DEMO ? null : GEMINI_MODEL });
+
+  // Todas las demás acciones requieren un usuario autenticado.
+  if (!(await verifyUser(req))) return json({ error: "No autorizado. Inicia sesión." }, 401);
 
   // Búsqueda de productos en Open Food Facts (proxy: evita CORS, añade User-Agent).
   // No depende de Gemini, funciona siempre.

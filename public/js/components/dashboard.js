@@ -1,6 +1,7 @@
 import { store, SLOTS, sumMacros } from "../store.js";
 import { calorieRing, macroRing, animateRings } from "./rings.js";
 import { openManualModal } from "./manual.js";
+import { askCoach } from "../api.js";
 import { toast } from "./ui.js";
 
 const GOAL_LABELS = { lose: "Perder grasa", maintain: "Mantener", gain: "Ganar músculo" };
@@ -67,6 +68,8 @@ export function renderDashboard(root, { navigate, refresh }) {
               .join("")}
           </div>
         </div>
+
+        ${waterCard()}
       </div>
     </div>
 
@@ -77,6 +80,8 @@ export function renderDashboard(root, { navigate, refresh }) {
     <div class="meals-grid">
       ${SLOTS.map((slot) => renderSlot(slot, mealsBySlot[slot.id])).join("")}
     </div>
+
+    ${progressCard()}
   `;
 
   animateRings(root);
@@ -107,6 +112,50 @@ export function renderDashboard(root, { navigate, refresh }) {
     toast(`Copiadas ${n} comidas de ayer ✅`);
     refresh();
   });
+
+  root.querySelectorAll("[data-water]").forEach((btn) =>
+    btn.addEventListener("click", () => { store.addWater(Number(btn.dataset.water)); refresh(); })
+  );
+
+  root.querySelector("#weekly-review")?.addEventListener("click", openWeeklyReview);
+}
+
+// Repaso semanal con IA: calcula tus stats y pide un resumen al coach.
+async function openWeeklyReview() {
+  const goals = store.goals();
+  const weekly = store.weeklyCalories();
+  const logged = weekly.filter((v) => v > 0);
+  const avgCal = logged.length ? Math.round(logged.reduce((a, b) => a + b, 0) / logged.length) : 0;
+  const weights = store.weights();
+  const wChange = weights.length >= 2 ? +(weights.at(-1).kg - weights[0].kg).toFixed(1) : 0;
+  const sessions = store.sessionsThisWeek();
+  const streak = store.nutritionStreak();
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  backdrop.innerHTML = `<div class="modal"><div class="rec-detail-head"><h3>✨ Repaso semanal</h3><button class="ex-close" id="wr-x">✕</button></div><div id="wr-body"><div class="spinner" style="margin:24px auto"></div></div></div>`;
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) backdrop.remove(); });
+  backdrop.querySelector("#wr-x").addEventListener("click", () => backdrop.remove());
+
+  const msg =
+    `Hazme un repaso breve y motivador de mi semana. Datos: media de ${avgCal} kcal/día (objetivo ${goals.calories}), ` +
+    `${sessions} entrenos esta semana, racha de ${streak} días registrando comida, ` +
+    `cambio de peso ${wChange >= 0 ? "+" : ""}${wChange} kg. Dame 2-3 frases de resumen y un consejo concreto para la semana que viene.`;
+
+  try {
+    const reply = await askCoach([{ role: "user", content: msg }], { consumed: { calories: avgCal }, target: goals });
+    backdrop.querySelector("#wr-body").innerHTML = `
+      <div class="wr-stats">
+        <div><b>${avgCal}</b><span>kcal/día</span></div>
+        <div><b>${sessions}</b><span>entrenos</span></div>
+        <div><b>${streak}</b><span>racha</span></div>
+        <div><b>${wChange >= 0 ? "+" : ""}${wChange}</b><span>kg</span></div>
+      </div>
+      <p class="wr-text">${escapeHtml(reply)}</p>`;
+  } catch {
+    backdrop.querySelector("#wr-body").innerHTML = `<p class="hist-note">No se pudo generar el repaso. Revisa la conexión.</p>`;
+  }
 }
 
 function renderSlot(slot, meals) {
@@ -142,6 +191,40 @@ function renderMeal(m) {
       <div class="meal-item-kcal">${Math.round(m.calories)}</div>
       <button class="meal-edit" data-edit="${m.id}" title="Editar">✎</button>
       <button class="meal-del" data-del="${m.id}" title="Borrar">✕</button>
+    </div>`;
+}
+
+function waterCard() {
+  const ml = store.water();
+  const goal = store.waterGoal();
+  const pct = Math.min(100, Math.round((ml / goal) * 100));
+  return `
+    <div class="card water-card">
+      <div class="water-head"><span class="section-title" style="margin:0">💧 Agua</span><span class="water-val">${ml} / ${goal} ml</span></div>
+      <div class="water-bar"><div class="water-fill" style="width:${pct}%"></div></div>
+      <div class="water-btns">
+        <button data-water="250">+250</button>
+        <button data-water="500">+500</button>
+        <button data-water="-250">−250</button>
+      </div>
+    </div>`;
+}
+
+function progressCard() {
+  const streak = store.nutritionStreak();
+  const badges = store.achievements();
+  const earned = badges.filter((a) => a.earned).length;
+  return `
+    <div class="section-title" style="margin-top:28px">Tu progreso</div>
+    <div class="card prog-card">
+      <div class="prog-row">
+        <div class="prog-streak">🔥 <b>${streak}</b> <span>${streak === 1 ? "día" : "días"} registrando comida</span></div>
+        <button class="btn btn-ghost prog-review" id="weekly-review">✨ Repaso semanal</button>
+      </div>
+      <div class="badges-title">Logros (${earned}/${badges.length})</div>
+      <div class="badges">
+        ${badges.map((a) => `<span class="badge-chip ${a.earned ? "earned" : ""}" title="${a.label}">${a.icon}</span>`).join("")}
+      </div>
     </div>`;
 }
 

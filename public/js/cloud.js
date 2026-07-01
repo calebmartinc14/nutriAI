@@ -38,6 +38,7 @@ export async function pullAll(user) {
     lang: p?.routine?.lang ?? null,
     favorites: p?.routine?.favorites ?? [],
     userRecipes: p?.routine?.userRecipes ?? [],
+    water: p?.routine?.water ?? {},
     username,
     meals: (meals.data ?? []).map((m) => ({
       id: m.id, date: m.date, name: m.name, slot: m.slot,

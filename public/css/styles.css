@@ -763,3 +763,32 @@ html, body {
   .ing-row { grid-template-columns: 1fr 1fr; }
   .ing-row .ing-name { grid-column: span 2; }
 }
+
+/* ====================== AGUA ====================== */
+.water-card { padding: 18px 20px; }
+.water-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.water-val { color: var(--text-2); font-size: 13px; font-weight: 600; }
+.water-bar { height: 10px; background: var(--track); border-radius: 6px; overflow: hidden; }
+.water-fill { height: 100%; background: linear-gradient(90deg, #3fa9ff, #5b8def); border-radius: 6px; transition: width .5s ease; }
+.water-btns { display: flex; gap: 8px; margin-top: 12px; }
+.water-btns button { flex: 1; background: var(--surface-2); border: 1px solid var(--stroke); color: var(--text); border-radius: 10px; padding: 9px; font-weight: 700; font-size: 13px; cursor: pointer; font-family: inherit; }
+.water-btns button:hover { border-color: #5b8def; color: #8bb6ff; }
+
+/* ====================== PROGRESO / LOGROS ====================== */
+.prog-card { padding: 18px 20px; }
+.prog-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.prog-streak { font-size: 18px; }
+.prog-streak b { font-size: 22px; color: var(--cal); }
+.prog-streak span { color: var(--text-2); font-size: 13px; font-weight: 600; }
+.prog-review { width: auto; padding: 9px 16px; }
+.badges-title { color: var(--text-2); font-size: 13px; font-weight: 700; margin: 16px 0 8px; }
+.badges { display: flex; flex-wrap: wrap; gap: 8px; }
+.badge-chip { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 20px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--stroke); filter: grayscale(1); opacity: 0.45; }
+.badge-chip.earned { filter: none; opacity: 1; border-color: color-mix(in srgb, var(--cal) 40%, var(--stroke)); background: rgba(0,229,168,0.08); }
+
+/* Repaso semanal */
+.wr-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+.wr-stats > div { background: var(--surface-2); border-radius: 12px; padding: 12px 8px; text-align: center; }
+.wr-stats b { display: block; font-size: 20px; font-weight: 800; color: var(--cal); }
+.wr-stats span { color: var(--text-3); font-size: 11px; }
+.wr-text { white-space: pre-wrap; line-height: 1.55; color: var(--text); font-size: 14px; }

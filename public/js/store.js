@@ -92,6 +92,7 @@ function getState() {
     customRoutines: (s.customRoutines ?? []).map(normalizeRoutine), // [{id,name,days:[{id,label,exercises}]}]
     favorites: s.favorites ?? [], // [{id,name,calories,protein,carbs,fat}]
     userRecipes: s.userRecipes ?? [], // [{id,name,ingredients:[{name,grams,calories,protein,carbs,fat}]}]
+    water: s.water ?? {}, // { "YYYY-MM-DD": ml }
     hideDefaultRoutine: s.hideDefaultRoutine ?? false,
     lang: s.lang ?? null, // idioma preferido (i18n)
     profile: s.profile ?? null,
@@ -165,6 +166,7 @@ function profileRow(s) {
       lang: s.lang ?? null,
       favorites: s.favorites ?? [],
       userRecipes: s.userRecipes ?? [],
+      water: s.water ?? {},
     },
   };
 }
@@ -279,6 +281,56 @@ export const store = {
   },
   isFavorite(name) {
     return getState().favorites.some((f) => f.name.toLowerCase() === (name || "").toLowerCase());
+  },
+
+  // ---- Agua ----
+  waterGoal() {
+    return 2000;
+  },
+  water(dateKey = todayKey()) {
+    return getState().water[dateKey] || 0;
+  },
+  addWater(ml, dateKey = todayKey()) {
+    const s = getState();
+    s.water[dateKey] = Math.max(0, (s.water[dateKey] || 0) + ml);
+    save(s);
+    emit("profile", "upsert", profileRow(s));
+  },
+
+  // ---- Racha de registro de nutrición ----
+  nutritionStreak() {
+    const days = new Set(getState().meals.map((m) => m.date));
+    if (!days.size) return 0;
+    const d = new Date();
+    if (!days.has(todayKey(d))) {
+      d.setDate(d.getDate() - 1);
+      if (!days.has(todayKey(d))) return 0; // ni hoy ni ayer -> racha rota
+    }
+    let streak = 0;
+    while (days.has(todayKey(d))) { streak++; d.setDate(d.getDate() - 1); }
+    return streak;
+  },
+
+  // ---- Logros / medallas ----
+  achievements() {
+    const s = getState();
+    const nut = this.nutritionStreak();
+    const goalCal = s.goals?.calories || 0;
+    const byDate = {};
+    s.meals.forEach((m) => { byDate[m.date] = (byDate[m.date] || 0) + (m.calories || 0); });
+    const hitGoal = goalCal > 0 && Object.values(byDate).some((c) => c >= goalCal * 0.9 && c <= goalCal * 1.1);
+    return [
+      { id: "first", icon: "🍽️", label: "Primer registro", earned: s.meals.length >= 1 },
+      { id: "streak7", icon: "🔥", label: "Racha 7 días", earned: nut >= 7 },
+      { id: "streak30", icon: "🏅", label: "Racha 30 días", earned: nut >= 30 },
+      { id: "goal", icon: "🎯", label: "Objetivo diario cumplido", earned: hitGoal },
+      { id: "ai", icon: "📷", label: "Escáner con IA", earned: s.meals.some((m) => m.source === "ai") },
+      { id: "recipe", icon: "📗", label: "Receta propia creada", earned: (s.userRecipes || []).length >= 1 },
+      { id: "train1", icon: "🏋️", label: "Primer entreno", earned: s.sessions.length >= 1 },
+      { id: "train10", icon: "💪", label: "10 entrenos", earned: s.sessions.length >= 10 },
+      { id: "lift", icon: "⚡", label: "Primera serie registrada", earned: s.lifts.length >= 1 },
+      { id: "weigh", icon: "⚖️", label: "Peso registrado", earned: s.weights.length >= 1 },
+    ];
   },
 
   // ---- Recetas propias ----
@@ -645,6 +697,7 @@ export const store = {
       lang: data.lang ?? null,
       favorites: data.favorites ?? [],
       userRecipes: data.userRecipes ?? [],
+      water: data.water ?? {},
       profile: data.profile ?? null,
       onboarded: data.onboarded ?? false,
       username: data.username ?? null,
