@@ -24,6 +24,8 @@ function pickerView(slot) {
         ).join("")}
       </div>
 
+      <textarea id="scan-desc" class="scan-desc" rows="2" placeholder="Describe los alimentos para más precisión (opcional). Ej: pechuga de pollo, 150g de arroz y aceite de oliva"></textarea>
+
       <input id="file-camera" type="file" accept="image/*" capture="environment" class="hidden" />
       <input id="file-gallery" type="file" accept="image/*" class="hidden" />
 
@@ -48,13 +50,14 @@ function bindPicker(root, slot, ctx) {
 
   const onFile = (e) => {
     const file = e.target.files?.[0];
-    if (file) handleFile(root, file, slot, ctx);
+    const desc = root.querySelector("#scan-desc")?.value.trim() || "";
+    if (file) handleFile(root, file, slot, ctx, desc);
   };
   camera.addEventListener("change", onFile);
   gallery.addEventListener("change", onFile);
 }
 
-async function handleFile(root, file, slot, ctx) {
+async function handleFile(root, file, slot, ctx, desc = "") {
   let preview;
   try {
     preview = await fileToCompressedBase64(file);
@@ -75,8 +78,10 @@ async function handleFile(root, file, slot, ctx) {
       <div class="spinner"></div>
     </div>`;
 
+  // Combina la descripción del usuario con el tramo para dar más contexto a la IA.
+  const hint = [desc, `Es el ${slotLabel(slot)}`].filter(Boolean).join(". ");
   try {
-    const analysis = await analyzeFood(preview.base64, slotLabel(slot));
+    const analysis = await analyzeFood(preview.base64, hint);
     renderResult(root, { analysis, photo: preview.dataUrl, slot }, ctx);
   } catch (err) {
     renderError(root, err.message, ctx);

@@ -94,6 +94,13 @@ export function renderDashboard(root, { navigate, refresh }) {
     })
   );
 
+  root.querySelectorAll("[data-edit]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const m = store.meals().find((x) => x.id === btn.dataset.edit);
+      if (m) openManualModal(m.slot, refresh, m, m.id);
+    })
+  );
+
   root.querySelector("#repeat-yesterday")?.addEventListener("click", () => {
     const n = store.repeatYesterday();
     if (!n) return toast("No había comidas registradas ayer");
@@ -133,6 +140,7 @@ function renderMeal(m) {
         <div class="meal-macros">P ${Math.round(m.protein)}g · C ${Math.round(m.carbs)}g · G ${Math.round(m.fat)}g</div>
       </div>
       <div class="meal-item-kcal">${Math.round(m.calories)}</div>
+      <button class="meal-edit" data-edit="${m.id}" title="Editar">✎</button>
       <button class="meal-del" data-del="${m.id}" title="Borrar">✕</button>
     </div>`;
 }

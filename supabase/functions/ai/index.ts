@@ -121,13 +121,30 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Estimar macros de un alimento por gramos (para recetas propias).
+  if (action === "estimate-food") {
+    if (DEMO) return json({ macros: demoEstimate(body.grams), demo: true });
+    try {
+      const raw = await gemini(
+        "Eres un nutricionista. Estima los valores nutricionales para la cantidad indicada. Devuelve SOLO JSON válido.",
+        [{ text: `Alimento: ${body.food}. Cantidad: ${body.grams} g. Da calorías totales y gramos de proteína, carbohidratos y grasa PARA ESA CANTIDAD.` }],
+        { temperature: 0.2, responseMimeType: "application/json", responseSchema: MACRO_SCHEMA },
+      );
+      const o = JSON.parse(raw);
+      return json({ macros: { calories: o.calories, protein: o.protein_g, carbs: o.carbs_g, fat: o.fat_g } });
+    } catch (e) {
+      console.error(e);
+      return json({ error: "No se pudo estimar" }, 502);
+    }
+  }
+
   try {
     if (action === "analyze-food") {
       if (DEMO) return json({ analysis: demoFood(), demo: true });
       const raw = await gemini(
         FOOD_PROMPT,
         [
-          { text: body.mealHint ? `Contexto: ${body.mealHint}.` : "Analiza este plato." },
+          { text: body.mealHint ? `El usuario describe lo que hay en la foto: "${body.mealHint}". Usa esa información para estimar con MÁS precisión las cantidades y macros.` : "Analiza este plato." },
           { inlineData: { mimeType: body.mimeType ?? "image/jpeg", data: body.imageBase64 } },
         ],
         { temperature: 0.2, responseMimeType: "application/json", responseSchema: FOOD_SCHEMA },
@@ -174,6 +191,17 @@ Para pierna usa prensa, extensiones, curl femoral, hip thrust, zancadas, gemelos
     return json({ error: "Error en el servicio de IA" }, 502);
   }
 });
+
+const MACRO_SCHEMA = {
+  type: "OBJECT",
+  properties: { calories: { type: "NUMBER" }, protein_g: { type: "NUMBER" }, carbs_g: { type: "NUMBER" }, fat_g: { type: "NUMBER" } },
+  required: ["calories", "protein_g", "carbs_g", "fat_g"],
+};
+
+function demoEstimate(grams: number) {
+  const g = Number(grams) || 100;
+  return { calories: Math.round(g * 1.5), protein: Math.round(g * 0.1), carbs: Math.round(g * 0.15), fat: Math.round(g * 0.05) };
+}
 
 function demoFood() {
   return { is_food: true, dish_name: "Plato de ejemplo (demo)", calories: 600, protein_g: 40, carbs_g: 55, fat_g: 22, confidence: 0.8, notes: "Modo demo." };

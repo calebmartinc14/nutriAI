@@ -81,7 +81,7 @@ app.post("/api/analyze-food", async (req, res) => {
           {
             role: "user",
             parts: [
-              { text: mealHint ? `Contexto: es el ${mealHint} del usuario.` : "Analiza este plato." },
+              { text: mealHint ? `El usuario describe lo que hay en la foto: "${mealHint}". Usa esa información para estimar con MÁS precisión las cantidades y macros.` : "Analiza este plato." },
               { inlineData: { mimeType, data: imageBase64 } },
             ],
           },
@@ -255,6 +255,39 @@ app.post("/api/product-search", async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(502).json({ error: "Error buscando productos" });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// POST /api/estimate-food  -> estima macros de un alimento por gramos (recetas)
+// ---------------------------------------------------------------------------
+app.post("/api/estimate-food", async (req, res) => {
+  const { food, grams } = req.body ?? {};
+  if (DEMO_MODE) {
+    const g = Number(grams) || 100;
+    return res.json({ macros: { calories: Math.round(g * 1.5), protein: Math.round(g * 0.1), carbs: Math.round(g * 0.15), fat: Math.round(g * 0.05) }, demo: true });
+  }
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: "Eres un nutricionista. Estima los valores para la cantidad indicada. Devuelve SOLO JSON válido." }] },
+        contents: [{ role: "user", parts: [{ text: `Alimento: ${food}. Cantidad: ${grams} g. Da calorías totales y gramos de proteína, carbohidratos y grasa PARA ESA CANTIDAD.` }] }],
+        generationConfig: {
+          temperature: 0.2, responseMimeType: "application/json",
+          responseSchema: { type: "OBJECT", properties: { calories: { type: "NUMBER" }, protein_g: { type: "NUMBER" }, carbs_g: { type: "NUMBER" }, fat_g: { type: "NUMBER" } }, required: ["calories", "protein_g", "carbs_g", "fat_g"] },
+        },
+      }),
+    });
+    if (!r.ok) return res.status(502).json({ error: "IA no disponible" });
+    const payload = await r.json();
+    const o = JSON.parse(payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}");
+    res.json({ macros: { calories: o.calories, protein: o.protein_g, carbs: o.carbs_g, fat: o.fat_g } });
+  } catch (e) {
+    console.error(e);
+    res.status(502).json({ error: "No se pudo estimar" });
   }
 });
 

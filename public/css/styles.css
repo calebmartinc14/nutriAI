@@ -737,3 +737,29 @@ html, body {
 /* Fila título comidas + repetir ayer */
 .meals-title-row { display: flex; align-items: center; justify-content: space-between; margin: 28px 4px 14px; }
 .meals-title-row .meals-title { margin: 0; }
+
+/* Editar comida en el diario */
+.meal-edit { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 15px; padding: 4px; }
+.meal-edit:hover { color: var(--cal); }
+
+/* Descripción en el escáner */
+.scan-desc { width: 100%; max-width: 420px; background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 12px; padding: 11px 14px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; resize: vertical; }
+.scan-desc:focus { border-color: var(--cal); }
+
+/* Creador de recetas propias */
+.rec-creator { max-width: 620px; }
+.ing-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 14px; font-weight: 700; margin: 6px 0 10px; }
+.ing-head small { color: var(--text-3); font-weight: 500; }
+.ing-row { display: grid; grid-template-columns: 1.6fr 0.7fr 0.8fr 0.6fr 0.6fr 0.6fr auto auto; gap: 6px; margin-bottom: 8px; align-items: center; }
+.ing-row input { background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 8px; padding: 8px 6px; color: var(--text); font-family: inherit; font-size: 13px; outline: none; min-width: 0; }
+.ing-row input:focus { border-color: var(--cal); }
+.ing-ai { background: rgba(0,229,168,0.15); border: 1px solid var(--cal); color: var(--cal); border-radius: 8px; cursor: pointer; font-size: 14px; padding: 7px 9px; }
+.ing-rm { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 14px; }
+.ing-rm:hover { color: var(--fat); }
+.rec-addrow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+.rec-addrow .prod-slot { background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 10px; padding: 10px 12px; color: var(--text); font-family: inherit; }
+.rec-addrow .btn { width: auto; padding: 10px 16px; }
+@media (max-width: 620px) {
+  .ing-row { grid-template-columns: 1fr 1fr; }
+  .ing-row .ing-name { grid-column: span 2; }
+}

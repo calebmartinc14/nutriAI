@@ -1,13 +1,23 @@
-import { store } from "../store.js";
+import { store, SLOTS } from "../store.js";
 import { RECIPES, COMIDA_PCT, COMIDA_SLOT, escalarReceta, totalesPlan } from "../lib/recipes.js";
+import { estimateFood } from "../api.js";
 import { toast } from "./ui.js";
 
 export function renderRecipes(root) {
+  const mine = store.userRecipes();
   root.innerHTML = `
     <div class="weight-head">
       <h2 class="page-title">Recetas</h2>
       <p class="page-sub">Las cantidades se ajustan a tus macros objetivo para cada comida.</p>
     </div>
+
+    <div class="section-title" style="margin-top:4px; display:flex; justify-content:space-between; align-items:center">
+      <span>Mis recetas</span>
+      <button class="wk-toggle-def" id="new-user-rec">＋ Crear receta</button>
+    </div>
+    ${mine.length ? `<div class="rec-grid">${mine.map(userCard).join("")}</div>` : `<p class="hist-note">Crea tus propias recetas con ingredientes, gramos y macros (a mano o con IA).</p>`}
+
+    <div class="section-title" style="margin-top:24px">Recetas sugeridas</div>
     <div class="rec-grid">
       ${RECIPES.map(card).join("")}
     </div>
@@ -16,7 +26,155 @@ export function renderRecipes(root) {
   root.querySelectorAll("[data-rec]").forEach((el) =>
     el.addEventListener("click", () => openRecipe(root, el.dataset.rec))
   );
+  root.querySelectorAll("[data-userrec]").forEach((el) =>
+    el.addEventListener("click", () => openUserRecipe(root, el.dataset.userrec))
+  );
+  root.querySelector("#new-user-rec").addEventListener("click", () => openRecipeCreator(root));
 }
+
+function userTotals(r) {
+  return r.ingredients.reduce((a, i) => ({
+    calories: a.calories + (+i.calories || 0), protein: a.protein + (+i.protein || 0),
+    carbs: a.carbs + (+i.carbs || 0), fat: a.fat + (+i.fat || 0),
+  }), { calories: 0, protein: 0, carbs: 0, fat: 0 });
+}
+
+function userCard(r) {
+  const t = userTotals(r);
+  return `
+    <div class="card rec-card" data-userrec="${r.id}">
+      <div class="rec-emoji">📗</div>
+      <div class="rec-info">
+        <div class="rec-title">${esc(r.name)}</div>
+        <div class="rec-meal">${Math.round(t.calories)} kcal · ${r.ingredients.length} ingr.</div>
+      </div>
+    </div>`;
+}
+
+function openUserRecipe(root, id) {
+  const r = store.userRecipes().find((x) => x.id === id);
+  if (!r) return;
+  const t = userTotals(r);
+  const detail = root.querySelector("#rec-detail");
+  detail.innerHTML = `
+    <div class="card rec-detail-card">
+      <div class="rec-detail-head"><span>📗 <b>${esc(r.name)}</b></span><button class="ex-close" id="ur-x">✕</button></div>
+      <div class="section-title" style="margin-top:8px">Ingredientes</div>
+      <div class="rec-ings">
+        ${r.ingredients.map((i) => `<div class="rec-ing"><span>${esc(i.name)} · ${i.grams} g</span><b>${Math.round(i.calories)} kcal</b></div>`).join("")}
+      </div>
+      <div class="rec-totals">≈ ${Math.round(t.calories)} kcal · ${Math.round(t.protein)}P · ${Math.round(t.carbs)}C · ${Math.round(t.fat)}G</div>
+      <div class="rec-addrow">
+        <select id="ur-slot" class="prod-slot">${SLOTS.map((s) => `<option value="${s.id}">${s.label}</option>`).join("")}</select>
+        <button class="btn btn-primary" id="ur-add">Añadir al diario</button>
+        <button class="btn btn-ghost" id="ur-del">Borrar</button>
+      </div>
+    </div>`;
+  detail.querySelector("#ur-x").addEventListener("click", () => (detail.innerHTML = ""));
+  detail.querySelector("#ur-add").addEventListener("click", () => {
+    store.addMeal({ name: r.name, slot: detail.querySelector("#ur-slot").value, calories: Math.round(t.calories), protein: Math.round(t.protein), carbs: Math.round(t.carbs), fat: Math.round(t.fat), source: "recipe" });
+    toast("Receta añadida a tu diario ✅");
+    detail.innerHTML = "";
+  });
+  detail.querySelector("#ur-del").addEventListener("click", () => {
+    store.deleteUserRecipe(r.id);
+    toast("Receta borrada");
+    renderRecipes(root);
+  });
+  detail.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// Creador de receta propia: ingredientes con gramos + macros (a mano o con IA).
+function openRecipeCreator(root) {
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  let rows = [{ name: "", grams: "", calories: "", protein: "", carbs: "", fat: "" }];
+
+  const rowHtml = (r, i) => `
+    <div class="ing-row" data-i="${i}">
+      <input class="ing-name" placeholder="Alimento" value="${attr(r.name)}" />
+      <input class="ing-g" type="number" inputmode="numeric" placeholder="g" value="${attr(r.grams)}" />
+      <input class="ing-kcal" type="number" inputmode="numeric" placeholder="kcal" value="${attr(r.calories)}" />
+      <input class="ing-p" type="number" inputmode="numeric" placeholder="P" value="${attr(r.protein)}" />
+      <input class="ing-c" type="number" inputmode="numeric" placeholder="C" value="${attr(r.carbs)}" />
+      <input class="ing-f" type="number" inputmode="numeric" placeholder="G" value="${attr(r.fat)}" />
+      <button class="ing-ai" data-ai="${i}" title="Calcular con IA">✨</button>
+      <button class="ing-rm" data-rm="${i}" title="Quitar">✕</button>
+    </div>`;
+
+  const draw = () => {
+    backdrop.innerHTML = `
+      <div class="modal rec-creator">
+        <div class="rec-detail-head"><h3>Nueva receta</h3><button class="ex-close" id="rc-x">✕</button></div>
+        <div class="field"><label>Nombre de la receta</label><input id="rc-name" type="text" placeholder="Ej. Mi bowl proteico" /></div>
+        <div class="ing-head"><span>Ingredientes</span><small>gramos + macros (✨ = calcular con IA)</small></div>
+        <div id="ing-list">${rows.map(rowHtml).join("")}</div>
+        <button class="wk-add-ex" id="rc-adding">＋ Añadir ingrediente</button>
+        <div class="rec-totals" id="rc-tot"></div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="btn btn-ghost" id="rc-cancel">Cancelar</button>
+          <button class="btn btn-primary" id="rc-save" style="flex:1">Guardar receta</button>
+        </div>
+      </div>`;
+    const nameEl = backdrop.querySelector("#rc-name");
+    if (draw._name) nameEl.value = draw._name;
+    updateTotals();
+
+    backdrop.querySelector("#rc-x").addEventListener("click", () => backdrop.remove());
+    backdrop.querySelector("#rc-cancel").addEventListener("click", () => backdrop.remove());
+    nameEl.addEventListener("input", () => { draw._name = nameEl.value; });
+
+    backdrop.querySelectorAll(".ing-row").forEach((row) => {
+      const i = Number(row.dataset.i);
+      const read = () => { rows[i] = {
+        name: row.querySelector(".ing-name").value, grams: row.querySelector(".ing-g").value,
+        calories: row.querySelector(".ing-kcal").value, protein: row.querySelector(".ing-p").value,
+        carbs: row.querySelector(".ing-c").value, fat: row.querySelector(".ing-f").value }; };
+      row.querySelectorAll("input").forEach((inp) => inp.addEventListener("input", () => { read(); updateTotals(); }));
+      row.querySelector("[data-rm]").addEventListener("click", () => { read(); rows.splice(i, 1); if (!rows.length) rows.push({ name: "", grams: "", calories: "", protein: "", carbs: "", fat: "" }); draw(); });
+      row.querySelector("[data-ai]").addEventListener("click", async () => {
+        read();
+        const r = rows[i];
+        if (!r.name || !(Number(r.grams) > 0)) return toast("Pon el alimento y los gramos primero");
+        const btn = row.querySelector("[data-ai]");
+        btn.textContent = "…"; btn.disabled = true;
+        try {
+          const m = await estimateFood(r.name, Number(r.grams));
+          rows[i] = { ...r, calories: Math.round(m.calories), protein: Math.round(m.protein), carbs: Math.round(m.carbs), fat: Math.round(m.fat) };
+          draw();
+        } catch { toast("No se pudo calcular con IA"); btn.textContent = "✨"; btn.disabled = false; }
+      });
+    });
+
+    backdrop.querySelector("#rc-adding").addEventListener("click", () => { rows.push({ name: "", grams: "", calories: "", protein: "", carbs: "", fat: "" }); draw(); });
+    backdrop.querySelector("#rc-save").addEventListener("click", save);
+  };
+
+  function updateTotals() {
+    const t = rows.reduce((a, r) => ({ c: a.c + (+r.calories || 0), p: a.p + (+r.protein || 0), ca: a.ca + (+r.carbs || 0), f: a.f + (+r.fat || 0) }), { c: 0, p: 0, ca: 0, f: 0 });
+    const el = backdrop.querySelector("#rc-tot");
+    if (el) el.textContent = `Total ≈ ${Math.round(t.c)} kcal · ${Math.round(t.p)}P · ${Math.round(t.ca)}C · ${Math.round(t.f)}G`;
+  }
+
+  function save() {
+    const name = (draw._name || backdrop.querySelector("#rc-name").value).trim();
+    if (!name) return toast("Ponle un nombre a la receta");
+    const ingredients = rows
+      .filter((r) => r.name && r.name.trim())
+      .map((r) => ({ name: r.name.trim(), grams: Number(r.grams) || 0, calories: Number(r.calories) || 0, protein: Number(r.protein) || 0, carbs: Number(r.carbs) || 0, fat: Number(r.fat) || 0 }));
+    if (!ingredients.length) return toast("Añade al menos un ingrediente");
+    store.addUserRecipe({ name, ingredients });
+    backdrop.remove();
+    toast("Receta guardada 📗");
+    renderRecipes(root);
+  }
+
+  document.body.appendChild(backdrop);
+  backdrop.addEventListener("click", (e) => { if (e.target === backdrop) backdrop.remove(); });
+  draw();
+}
+
+function attr(s) { return String(s ?? "").replace(/"/g, "&quot;"); }
 
 function card(r) {
   return `

@@ -91,6 +91,7 @@ function getState() {
     hiddenExercises: s.hiddenExercises ?? {}, // { focus: [name, ...] }
     customRoutines: (s.customRoutines ?? []).map(normalizeRoutine), // [{id,name,days:[{id,label,exercises}]}]
     favorites: s.favorites ?? [], // [{id,name,calories,protein,carbs,fat}]
+    userRecipes: s.userRecipes ?? [], // [{id,name,ingredients:[{name,grams,calories,protein,carbs,fat}]}]
     hideDefaultRoutine: s.hideDefaultRoutine ?? false,
     lang: s.lang ?? null, // idioma preferido (i18n)
     profile: s.profile ?? null,
@@ -163,6 +164,7 @@ function profileRow(s) {
       hideDefaultRoutine: s.hideDefaultRoutine ?? false,
       lang: s.lang ?? null,
       favorites: s.favorites ?? [],
+      userRecipes: s.userRecipes ?? [],
     },
   };
 }
@@ -229,6 +231,17 @@ export const store = {
     emit("meals", "delete", { id });
   },
 
+  // Edita una comida ya registrada (nombre y macros).
+  updateMeal(id, fields) {
+    const s = getState();
+    const m = s.meals.find((x) => x.id === id);
+    if (!m) return;
+    Object.assign(m, fields);
+    save(s);
+    const { photo, ...cloud } = m;
+    emit("meals", "upsert", cloud);
+  },
+
   // ---- Consulta de historico ----
   allMeals() {
     return getState().meals;
@@ -266,6 +279,23 @@ export const store = {
   },
   isFavorite(name) {
     return getState().favorites.some((f) => f.name.toLowerCase() === (name || "").toLowerCase());
+  },
+
+  // ---- Recetas propias ----
+  userRecipes() {
+    return getState().userRecipes;
+  },
+  addUserRecipe(recipe) {
+    const s = getState();
+    s.userRecipes.push({ id: crypto.randomUUID(), name: recipe.name, ingredients: recipe.ingredients || [] });
+    save(s);
+    emit("profile", "upsert", profileRow(s));
+  },
+  deleteUserRecipe(id) {
+    const s = getState();
+    s.userRecipes = s.userRecipes.filter((r) => r.id !== id);
+    save(s);
+    emit("profile", "upsert", profileRow(s));
   },
 
   // Copia las comidas de ayer al día de hoy.
@@ -614,6 +644,7 @@ export const store = {
       hideDefaultRoutine: data.hideDefaultRoutine ?? false,
       lang: data.lang ?? null,
       favorites: data.favorites ?? [],
+      userRecipes: data.userRecipes ?? [],
       profile: data.profile ?? null,
       onboarded: data.onboarded ?? false,
       username: data.username ?? null,

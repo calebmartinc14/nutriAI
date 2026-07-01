@@ -2,7 +2,8 @@ import { store, SLOTS } from "../store.js";
 import { toast } from "./ui.js";
 
 // Modal de registro manual (100% gratis y offline).
-export function openManualModal(slotId = "breakfast", onSaved, prefill = null) {
+// editId: si se pasa, en vez de crear una comida nueva, EDITA la existente.
+export function openManualModal(slotId = "breakfast", onSaved, prefill = null, editId = null) {
   const recents = prefill ? [] : store.recentMeals(8);
   const favs = prefill ? [] : store.favorites();
   const data = (m) => encodeURIComponent(JSON.stringify({ name: m.name, calories: m.calories, protein: m.protein, carbs: m.carbs, fat: m.fat }));
@@ -16,7 +17,7 @@ export function openManualModal(slotId = "breakfast", onSaved, prefill = null) {
   backdrop.className = "modal-backdrop";
   backdrop.innerHTML = `
     <div class="modal">
-      <h3>${prefill ? "Confirmar comida" : "Añadir comida"}</h3>
+      <h3>${editId ? "Editar comida" : prefill ? "Confirmar comida" : "Añadir comida"}</h3>
 
       ${!prefill && (favs.length || recents.length) ? `
       <div class="qa-wrap">
@@ -98,18 +99,22 @@ export function openManualModal(slotId = "breakfast", onSaved, prefill = null) {
   backdrop.querySelector("#m-save").addEventListener("click", () => {
     const name = backdrop.querySelector("#m-name").value.trim();
     if (!name) return toast("Ponle un nombre a la comida");
-    store.addMeal({
+    const fields = {
       name,
       slot: selectedSlot,
       calories: num("#m-cal"),
       protein: num("#m-pro"),
       carbs: num("#m-car"),
       fat: num("#m-fat"),
-      photo: prefill?.photo ?? null,
-      source: prefill?.source ?? "manual",
-    });
+    };
+    if (editId) {
+      store.updateMeal(editId, fields);
+      toast("Comida actualizada ✅");
+    } else {
+      store.addMeal({ ...fields, photo: prefill?.photo ?? null, source: prefill?.source ?? "manual" });
+      toast("Guardado ✅");
+    }
     close();
-    toast("Guardado ✅");
     onSaved?.();
   });
 
