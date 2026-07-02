@@ -5,10 +5,17 @@ import "dotenv/config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+import { existsSync } from "node:fs";
+
 const app = express();
 // La foto en base64 puede ser grande -> subimos el limite del body.
 app.use(express.json({ limit: "12mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+
+// En producción (dist/) servimos el build de Vite; si no, servimos public/ (dev).
+const STATIC_DIR = existsSync(path.join(__dirname, "dist"))
+  ? path.join(__dirname, "dist")
+  : path.join(__dirname, "public");
+app.use(express.static(STATIC_DIR));
 
 const PORT = process.env.PORT || 3000;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
