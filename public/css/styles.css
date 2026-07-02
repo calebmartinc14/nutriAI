@@ -807,3 +807,50 @@ html, body {
 .wr-stats b { display: block; font-size: 20px; font-weight: 800; color: var(--cal); }
 .wr-stats span { color: var(--text-3); font-size: 11px; }
 .wr-text { white-space: pre-wrap; line-height: 1.55; color: var(--text); font-size: 14px; }
+
+/* ====================== CALENDARIO DE ENTRENOS ====================== */
+.cal-card { padding: 18px 20px; }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.cal-nav-label { font-size: 16px; font-weight: 700; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-wd { text-align: center; font-size: 12px; font-weight: 700; color: var(--text-3); padding: 6px 0; }
+.cal-cell {
+  text-align: center; padding: 8px 4px; border-radius: 10px; font-size: 14px; font-weight: 600;
+  cursor: pointer; position: relative; min-height: 36px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+}
+.cal-cell:hover { background: var(--surface-2); }
+.cal-empty { cursor: default; visibility: hidden; }
+.cal-empty:hover { background: none; }
+.cal-today { font-weight: 800; color: var(--cal); }
+.cal-selected { background: var(--surface-2); outline: 2px solid var(--cal); outline-offset: -2px; }
+.cal-trained::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--cal); display: block; }
+.cal-scheduled::after { content: ''; width: 8px; height: 8px; border-radius: 50%; border: 2px solid var(--carbs); background: none; display: block; }
+.cal-legend { display: flex; align-items: center; gap: 4px; margin-top: 14px; font-size: 12px; color: var(--text-2); }
+.cal-legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+.cal-dot-trained { background: var(--cal); }
+.cal-dot-scheduled { border: 2px solid var(--carbs); background: none; }
+.cal-detail { padding: 16px 18px; margin-top: 12px; }
+.cal-detail-date { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+.cal-detail-sesiones { margin-bottom: 10px; font-size: 14px; }
+.cal-detail-ejercicios { display: flex; flex-direction: column; gap: 4px; }
+.cal-detail-label { color: var(--text-2); font-weight: 600; }
+
+/* Chips de día de la semana en rutinas propias */
+.mr-wd-row { display: flex; gap: 6px; margin: 8px 0; }
+.mr-wd-chip {
+  width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center;
+  justify-content: center; font-size: 13px; font-weight: 700; cursor: pointer; user-select: none;
+  border: 1px solid var(--stroke); background: var(--surface-2); color: var(--text-2);
+}
+.mr-wd-chip.active { border-color: var(--cal); background: rgba(0,229,168,0.15); color: var(--cal); }
+.mr-wd-chip:hover { border-color: var(--cal); }
+
+/* Formulario manual dentro de día de rutina */
+.mr-addpanel { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.mr-addpanel input {
+  flex: 1; min-width: 100px; background: var(--surface-2); border: 1px solid var(--stroke);
+  border-radius: 10px; padding: 8px 12px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+}
+.mr-addpanel input:focus { border-color: var(--cal); }
+.mr-addpanel .btn { width: auto; padding: 8px 14px; font-size: 12px; }

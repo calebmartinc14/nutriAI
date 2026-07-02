@@ -55,13 +55,19 @@ export function parseLocalDate(key) {
   return new Date(`${key}T00:00:00`);
 }
 
+// Clave de hoy (también exportada para componentes).
+export { todayKey };
+
 // Normaliza una rutina al formato por días (migra el formato antiguo de lista plana).
 function normalizeRoutine(r) {
-  if (Array.isArray(r.days)) return r;
+  if (Array.isArray(r.days)) {
+    r.days.forEach(d => { if (!d.weekdays) d.weekdays = []; });
+    return r;
+  }
   return {
     id: r.id,
     name: r.name,
-    days: [{ id: crypto.randomUUID(), label: "", exercises: r.exercises ?? [] }],
+    days: [{ id: crypto.randomUUID(), label: "", exercises: r.exercises ?? [], weekdays: [] }],
   };
 }
 
@@ -621,7 +627,7 @@ export const store = {
   },
   addRoutine(name) {
     const s = getState();
-    const r = { id: crypto.randomUUID(), name, days: [{ id: crypto.randomUUID(), label: "", exercises: [] }] };
+    const r = { id: crypto.randomUUID(), name, days: [{ id: crypto.randomUUID(), label: "", exercises: [], weekdays: [] }] };
     s.customRoutines.push(r);
     saveRoutines(s);
     return r;
@@ -639,7 +645,7 @@ export const store = {
   addRoutineDay(routineId) {
     const s = getState();
     const r = findR(s, routineId);
-    if (r) { r.days.push({ id: crypto.randomUUID(), label: "", exercises: [] }); saveRoutines(s); }
+    if (r) { r.days.push({ id: crypto.randomUUID(), label: "", exercises: [], weekdays: [] }); saveRoutines(s); }
   },
   deleteRoutineDay(routineId, dayId) {
     const s = getState();
@@ -660,6 +666,28 @@ export const store = {
     const s = getState();
     const d = findD(s, routineId, dayId);
     if (d) { d.exercises.splice(idx, 1); saveRoutines(s); }
+  },
+
+  // Series de una fecha concreta.
+  liftsOn(dateKey) {
+    return getState().lifts.filter((l) => l.date === dateKey);
+  },
+
+  // Sesiones de una fecha concreta.
+  sessionsOn(dateKey) {
+    return getState().sessions.filter((s) => s.date === dateKey);
+  },
+
+  // Asigna/desasigna un día de la semana (0=Lun…6=Dom) a un día de rutina.
+  toggleRoutineDayWeekday(routineId, dayId, wd) {
+    const s = getState();
+    const d = findD(s, routineId, dayId);
+    if (!d) return;
+    if (!Array.isArray(d.weekdays)) d.weekdays = [];
+    const idx = d.weekdays.indexOf(wd);
+    if (idx >= 0) d.weekdays.splice(idx, 1);
+    else d.weekdays.push(wd);
+    saveRoutines(s);
   },
   hideDefaultRoutine() {
     return getState().hideDefaultRoutine;
