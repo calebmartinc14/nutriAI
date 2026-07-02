@@ -100,6 +100,7 @@ function addSignOutButton() {
   const btn = document.createElement("button");
   btn.id = "signout";
   btn.className = "nav-item";
+  btn.classList.add("nav-item-danger");
   btn.innerHTML = `<span class="ni-ico">${icon('log-out', 20)}</span> <span class="ni-tx" data-i18n="nav.signout">Cerrar sesión</span>`;
   btn.addEventListener("click", signOut);
   foot.insertBefore(btn, foot.firstChild);
@@ -134,6 +135,10 @@ async function initApp() {
     addSignOutButton();
   }
 
+  // Aplica el tema guardado
+  const theme = store.theme();
+  document.documentElement.setAttribute("data-theme", theme);
+
   applyI18n(document); // traduce el nav y textos marcados
   updateHeader();
   updateAiBadge();
@@ -149,6 +154,14 @@ window.addEventListener("nutveo-lang", () => {
   applyI18n(document);
   updateHeader();
   refresh();
+});
+
+// Escucha cambios de tema y actualiza el color de la barra de navegación.
+window.addEventListener("nutveo-theme", () => {
+  const t = store.theme();
+  document.documentElement.setAttribute("data-theme", t);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = t === "light" ? "#FDFBF7" : "#0B0E11";
 });
 
 if ("serviceWorker" in navigator) {

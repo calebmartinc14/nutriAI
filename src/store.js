@@ -61,13 +61,17 @@ export { todayKey };
 // Normaliza una rutina al formato por días (migra el formato antiguo de lista plana).
 function normalizeRoutine(r) {
   if (Array.isArray(r.days)) {
-    r.days.forEach(d => { if (!d.weekdays) d.weekdays = []; });
-    return r;
+    r.days.forEach(d => {
+      if (!d.weekdays) d.weekdays = [];
+      if (d.exercises) d.exercises.forEach(e => { if (!e.sets) e.sets = []; });
+    });
+    return { isActive: r.isActive ?? false, ...r };
   }
   return {
     id: r.id,
     name: r.name,
-    days: [{ id: crypto.randomUUID(), label: "", exercises: r.exercises ?? [], weekdays: [] }],
+    isActive: r.isActive ?? false,
+    days: [{ id: crypto.randomUUID(), label: "", exercises: (r.exercises ?? []).map(e => ({ ...e, sets: e.sets ?? [] })), weekdays: [] }],
   };
 }
 
@@ -97,7 +101,8 @@ function getState() {
     sessions: s.sessions ?? [], // [{ date, focus }] entrenos completados
     customExercises: s.customExercises ?? {}, // { focus: [{id,name,muscle}] }
     hiddenExercises: s.hiddenExercises ?? {}, // { focus: [name, ...] }
-    customRoutines: (s.customRoutines ?? []).map(normalizeRoutine), // [{id,name,days:[{id,label,exercises}]}]
+    customRoutines: (s.customRoutines ?? []).map(normalizeRoutine), // [{id,name,isActive,days:[{id,label,exercises:[{name,muscle,sets}],weekdays}]}]
+    exerciseHistory: s.exerciseHistory ?? {}, // { "exercise_name": [{ date, reps, weight }] }
     favorites: s.favorites ?? [], // [{id,name,calories,protein,carbs,fat}]
     userRecipes: s.userRecipes ?? [], // [{id,name,ingredients:[{name,grams,calories,protein,carbs,fat}]}]
     water: s.water ?? {}, // { "YYYY-MM-DD": ml }
@@ -107,6 +112,7 @@ function getState() {
     onboarded: s.onboarded ?? false,
     username: s.username ?? null,
     isPremium: s.isPremium ?? false,
+    theme: s.theme ?? "dark",
     dailyUsage: s.dailyUsage ?? {},
   };
 }
@@ -172,7 +178,9 @@ function profileRow(s) {
       custom: s.customExercises ?? {},
       hidden: s.hiddenExercises ?? {},
       customRoutines: s.customRoutines ?? [],
+      exerciseHistory: s.exerciseHistory ?? {},
       hideDefaultRoutine: s.hideDefaultRoutine ?? false,
+      theme: s.theme ?? "dark",
       lang: s.lang ?? null,
       favorites: s.favorites ?? [],
       userRecipes: s.userRecipes ?? [],
@@ -506,6 +514,18 @@ export const store = {
     return !exists;
   },
 
+  unlogSession(focus, dateKey = todayKey()) {
+    const s = getState();
+    const before = s.sessions.length;
+    s.sessions = s.sessions.filter((x) => !(x.date === dateKey && x.focus === focus));
+    if (s.sessions.length !== before) { save(s); emit("sessions", "delete", { date: dateKey, focus }); }
+  },
+
+  toggleSession(focus, dateKey = todayKey()) {
+    if (this.hasSessionToday(focus)) { this.unlogSession(focus, dateKey); return false; }
+    else { this.logSession(focus, dateKey); return true; }
+  },
+
   hasSessionToday(focus) {
     const day = todayKey();
     return getState().sessions.some((x) => x.date === day && x.focus === focus);
@@ -562,7 +582,9 @@ export const store = {
       customExercises: obj.customExercises ?? (warn("customExercises"), {}),
       hiddenExercises: obj.hiddenExercises ?? (warn("hiddenExercises"), {}),
       customRoutines: Array.isArray(obj.customRoutines) ? obj.customRoutines : (warn("customRoutines"), []),
+      exerciseHistory: obj.exerciseHistory && typeof obj.exerciseHistory === "object" ? obj.exerciseHistory : (warn("exerciseHistory"), {}),
       hideDefaultRoutine: obj.hideDefaultRoutine ?? false,
+      theme: obj.theme ?? "dark",
       lang: obj.lang ?? null,
       favorites: Array.isArray(obj.favorites) ? obj.favorites : (warn("favorites"), []),
       userRecipes: Array.isArray(obj.userRecipes) ? obj.userRecipes : (warn("userRecipes"), []),
@@ -664,7 +686,7 @@ export const store = {
   addExerciseToRoutineDay(routineId, dayId, name, muscle = "") {
     const s = getState();
     const d = findD(s, routineId, dayId);
-    if (d) { d.exercises.push({ name, muscle }); saveRoutines(s); }
+    if (d) { d.exercises.push({ name, muscle, sets: [] }); saveRoutines(s); }
   },
   removeExerciseFromRoutineDay(routineId, dayId, idx) {
     const s = getState();
@@ -680,6 +702,52 @@ export const store = {
   // Sesiones de una fecha concreta.
   sessionsOn(dateKey) {
     return getState().sessions.filter((s) => s.date === dateKey);
+  },
+
+  // ---- Rutina activa ----
+  activeRoutine() {
+    return getState().customRoutines.find((r) => r.isActive) ?? null;
+  },
+
+  setActiveRoutine(id) {
+    const s = getState();
+    s.customRoutines = s.customRoutines.map((r) => ({ ...r, isActive: r.id === id }));
+    saveRoutines(s);
+  },
+
+  // ---- Series dentro de ejercicios de rutina propia ----
+  addSetToRoutineExercise(routineId, dayId, exerciseIdx, weight, reps) {
+    const s = getState();
+    const d = findD(s, routineId, dayId);
+    if (!d || !d.exercises[exerciseIdx]) return;
+    const ex = d.exercises[exerciseIdx];
+    if (!ex.sets) ex.sets = [];
+    ex.sets.push({ id: crypto.randomUUID(), weight: Number(weight), reps: Number(reps) });
+    saveRoutines(s);
+  },
+
+  removeSetFromRoutineExercise(routineId, dayId, exerciseIdx, setId) {
+    const s = getState();
+    const d = findD(s, routineId, dayId);
+    if (!d || !d.exercises[exerciseIdx]) return;
+    d.exercises[exerciseIdx].sets = (d.exercises[exerciseIdx].sets ?? []).filter((st) => st.id !== setId);
+    saveRoutines(s);
+  },
+
+  // ---- Historial de series por ejercicio (para evolución de fuerza) ----
+  logExerciseSet(exercise, weight, reps, dateKey = todayKey()) {
+    const s = getState();
+    if (!s.exerciseHistory) s.exerciseHistory = {};
+    if (!s.exerciseHistory[exercise]) s.exerciseHistory[exercise] = [];
+    s.exerciseHistory[exercise].push({ date: dateKey, weight: Number(weight), reps: Number(reps) });
+    save(s);
+    emit("lifts", "upsert", { id: crypto.randomUUID(), date: dateKey, exercise, kg: Number(weight), reps: Number(reps) });
+    pushRankStats();
+  },
+
+  exerciseHistoryFor(exercise) {
+    const s = getState();
+    return (s.exerciseHistory ?? {})[exercise] ?? [];
   },
 
   // Asigna/desasigna un día de la semana (0=Lun…6=Dom) a un día de rutina.
@@ -734,6 +802,7 @@ export const store = {
       customExercises: data.customExercises ?? {},
       hiddenExercises: data.hiddenExercises ?? {},
       customRoutines: data.customRoutines ?? [],
+      exerciseHistory: data.exerciseHistory ?? {},
       hideDefaultRoutine: data.hideDefaultRoutine ?? false,
       lang: data.lang ?? null,
       favorites: data.favorites ?? [],
@@ -742,6 +811,7 @@ export const store = {
       profile: data.profile ?? null,
       onboarded: data.onboarded ?? false,
       username: data.username ?? null,
+      theme: data.theme ?? "dark",
     });
   },
 
@@ -787,6 +857,16 @@ export const store = {
   setPremium(v) {
     const s = getState();
     s.isPremium = !!v;
+    save(s);
+  },
+
+  // ---- Tema (claro/oscuro) ----
+  theme() {
+    return getState().theme;
+  },
+  setTheme(t) {
+    const s = getState();
+    s.theme = t;
     save(s);
   },
 

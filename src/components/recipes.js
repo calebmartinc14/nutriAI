@@ -56,34 +56,63 @@ function userCard(r) {
 function openUserRecipe(root, id) {
   const r = store.userRecipes().find((x) => x.id === id);
   if (!r) return;
-  const tt = userTotals(r);
+  let pct = 30;
   const detail = root.querySelector("#rec-detail");
-  detail.innerHTML = `
-    <div class="card rec-detail-card">
-      <div class="rec-detail-head"><span>${icon('book', 18)} <b>${escapeHtml(r.name)}</b></span><button class="ex-close" id="ur-x">${icon('x', 18)}</button></div>
-      <div class="section-title" style="margin-top:8px">${t("rec.ingredients")}</div>
-      <div class="rec-ings">
-        ${r.ingredients.map((i) => `<div class="rec-ing"><span>${escapeHtml(i.name)} · ${i.grams} g</span><b>${Math.round(i.calories)} kcal</b></div>`).join("")}
-      </div>
-      <div class="rec-totals">≈ ${Math.round(tt.calories)} kcal · ${Math.round(tt.protein)}P · ${Math.round(tt.carbs)}C · ${Math.round(tt.fat)}G</div>
-      <div class="rec-addrow">
-        <select id="ur-slot" class="prod-slot">${SLOTS.map((s) => `<option value="${s.id}">${slotLabel(s.id)}</option>`).join("")}</select>
-        <button class="btn btn-primary" id="ur-add">${t("rec.addDiary")}</button>
-        <button class="btn btn-ghost" id="ur-del">${t("common.delete")}</button>
-      </div>
-    </div>`;
-  detail.querySelector("#ur-x").addEventListener("click", () => (detail.innerHTML = ""));
-  detail.querySelector("#ur-add").addEventListener("click", () => {
-    store.addMeal({ name: r.name, slot: detail.querySelector("#ur-slot").value, calories: Math.round(tt.calories), protein: Math.round(tt.protein), carbs: Math.round(tt.carbs), fat: Math.round(tt.fat), source: "recipe" });
-    toast(t("rec.addedDiary"));
-    detail.innerHTML = "";
-  });
-  detail.querySelector("#ur-del").addEventListener("click", () => {
-    store.deleteUserRecipe(r.id);
-    toast(t("rec.deleted"));
-    renderRecipes(root);
-  });
-  detail.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  function drawUser() {
+    const goals = store.goals();
+    const objetivo = { p: (goals.protein * pct) / 100, c: (goals.carbs * pct) / 100, f: (goals.fat * pct) / 100 };
+    const scale = (tt, target) => target > 0 ? Math.min(tt / target, 3) : 1;
+    const s = scale(userTotals(r).calories, objetivo.p * 4 + objetivo.c * 4 + objetivo.f * 9);
+    const scaled = { calories: Math.round(userTotals(r).calories / s), protein: Math.round(userTotals(r).protein / s), carbs: Math.round(userTotals(r).carbs / s), fat: Math.round(userTotals(r).fat / s) };
+    const tt = scaled;
+
+    detail.innerHTML = `
+      <div class="card rec-detail-card">
+        <div class="rec-detail-head"><span>${icon('book', 18)} <b>${escapeHtml(r.name)}</b></span><button class="ex-close" id="ur-x">${icon('x', 18)}</button></div>
+
+        <label class="rec-pct-label">${t("rec.pct", { pct: `<b>${pct.toFixed(2)}%</b>` })}</label>
+        <input id="ur-pct" type="range" min="10" max="60" step="any" value="${pct}" class="rec-range" />
+
+        <div class="rec-target">${t("rec.target")}: ${Math.round(objetivo.p)}P · ${Math.round(objetivo.c)}C · ${Math.round(objetivo.f)}G</div>
+
+        <div class="section-title" style="margin-top:8px">${t("rec.ingredients")}</div>
+        <div class="rec-ings">
+          ${r.ingredients.map((i) => `<div class="rec-ing"><span>${escapeHtml(i.name)} · ${i.grams} g</span><b>${Math.round(i.calories)} kcal</b></div>`).join("")}
+        </div>
+        <div class="rec-totals">≈ ${Math.round(tt.calories)} kcal · ${Math.round(tt.protein)}P · ${Math.round(tt.carbs)}C · ${Math.round(tt.fat)}G</div>
+        <div class="rec-addrow">
+          <select id="ur-slot" class="prod-slot">${SLOTS.map((s) => `<option value="${s.id}">${slotLabel(s.id)}</option>`).join("")}</select>
+          <button class="btn btn-primary" id="ur-add">${t("rec.addDiary")}</button>
+          <button class="btn btn-ghost-danger" id="ur-del">${t("common.delete")}</button>
+        </div>
+      </div>`;
+
+    detail.querySelector("#ur-x").addEventListener("click", () => (detail.innerHTML = ""));
+    const rangeEl = detail.querySelector("#ur-pct");
+    rangeEl.addEventListener("input", (e) => { pct = Number(e.target.value); drawUser(); });
+    rangeEl.addEventListener("pointerdown", (e) => {
+      const rect = rangeEl.getBoundingClientRect();
+      const onMove = (ev) => { pct = Math.min(60, Math.max(10, ((ev.clientX - rect.left) / rect.width) * 60)); drawUser(); };
+      const onUp = () => { document.removeEventListener("pointermove", onMove); document.removeEventListener("pointerup", onUp); };
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+      pct = Math.min(60, Math.max(10, ((e.clientX - rect.left) / rect.width) * 60));
+      drawUser();
+    });
+    detail.querySelector("#ur-add").addEventListener("click", () => {
+      store.addMeal({ name: r.name, slot: detail.querySelector("#ur-slot").value, calories: Math.round(tt.calories), protein: Math.round(tt.protein), carbs: Math.round(tt.carbs), fat: Math.round(tt.fat), source: "recipe" });
+      toast(t("rec.addedDiary"));
+      detail.innerHTML = "";
+    });
+    detail.querySelector("#ur-del").addEventListener("click", () => {
+      store.deleteUserRecipe(r.id);
+      toast(t("rec.deleted"));
+      renderRecipes(root);
+    });
+    detail.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+  drawUser();
 }
 
 // Creador de receta propia: ingredientes con gramos + macros (a mano o con IA).
@@ -209,8 +238,8 @@ function openRecipe(root, id) {
           <button class="ex-close" id="rec-x">${icon('x', 18)}</button>
         </div>
 
-        <label class="rec-pct-label">${t("rec.pct", { pct: `<b>${pct}%</b>` })}</label>
-        <input id="rec-pct" type="range" min="10" max="60" step="5" value="${pct}" class="rec-range" />
+        <label class="rec-pct-label">${t("rec.pct", { pct: `<b>${pct.toFixed(2)}%</b>` })}</label>
+        <input id="rec-pct" type="range" min="10" max="60" step="any" value="${pct}" class="rec-range" />
 
         <div class="rec-target">${t("rec.target")}: ${Math.round(objetivo.p)}P · ${Math.round(objetivo.c)}C · ${Math.round(objetivo.f)}G</div>
 
@@ -230,7 +259,17 @@ function openRecipe(root, id) {
       </div>`;
 
     detail.querySelector("#rec-x").addEventListener("click", () => (detail.innerHTML = ""));
-    detail.querySelector("#rec-pct").addEventListener("input", (e) => { pct = Number(e.target.value); draw(); });
+    const rangeEl = detail.querySelector("#rec-pct");
+    rangeEl.addEventListener("input", (e) => { pct = Number(e.target.value); draw(); });
+    rangeEl.addEventListener("pointerdown", (e) => {
+      const rect = rangeEl.getBoundingClientRect();
+      const onMove = (ev) => { pct = Math.min(60, Math.max(10, ((ev.clientX - rect.left) / rect.width) * 60)); draw(); };
+      const onUp = () => { document.removeEventListener("pointermove", onMove); document.removeEventListener("pointerup", onUp); };
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+      pct = Math.min(60, Math.max(10, ((e.clientX - rect.left) / rect.width) * 60));
+      draw();
+    });
     detail.querySelector("#rec-add").addEventListener("click", () => {
       store.addMeal({
         name: r.titulo,
