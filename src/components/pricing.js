@@ -3,7 +3,7 @@ import { icon } from "../lib/icons.js";
 import { toast } from "./ui.js";
 
 export function renderPricing(root, { navigate }) {
-  const isPremium = store.isPremium();
+  let isPremium = store.isPremium();
   const credits = { scan: 2, coach: 5, workout: 2 };
   const remaining = (action) => store.remainingCredits(action);
   const remainingText = (action) => {
@@ -82,7 +82,31 @@ export function renderPricing(root, { navigate }) {
 }
 
 function bind(root, { navigate }) {
-  root.querySelector("#pricing-upgrade")?.addEventListener("click", () => {
+  root.querySelector("#pricing-upgrade")?.addEventListener("click", async () => {
+    const btn = root.querySelector("#pricing-upgrade");
+    btn.disabled = true;
+    btn.textContent = "Redirigiendo...";
+
+    try {
+      const res = await fetch("/api/create-premium-checkout", { method: "POST" });
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+
+      if (data.error) {
+        toast(data.error);
+        btn.disabled = false;
+        btn.innerHTML = `${icon('crown', 16)} Conseguir Premium`;
+        return;
+      }
+    } catch (e) {
+      console.warn("LS checkout falló, modo local:", e);
+    }
+
+    // fallback: si no hay servidor o falla, activa premium local
     store.setPremium(true);
     toast("\u{1F389} \u{A1}Ya eres Premium! Todos los l\u00EDmites eliminados.");
     navigate("pricing");

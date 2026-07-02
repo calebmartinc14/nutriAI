@@ -1,6 +1,7 @@
 import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import crypto from "node:crypto";
 import "dotenv/config";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -27,6 +28,50 @@ const aiLimiter = rateLimit({
 });
 app.use("/api/analyze-food", aiLimiter);
 app.use("/api/coach", aiLimiter);
+
+// ---------------------------------------------------------------
+// Lemon Squeezy webhook — debe recibir el RAW body para verificar
+// firma, por eso se registra ANTES de express.json()
+// ---------------------------------------------------------------
+const paidCheckouts = new Map();
+
+app.post("/api/ls-webhook", async (req, res) => {
+  const chunks = [];
+  for await (const chunk of req) chunks.push(chunk);
+  const rawBody = Buffer.concat(chunks).toString("utf8");
+
+  const signature = req.headers["x-signature"];
+  const secret = process.env.LEMONSQUEEZY_WEBHOOK_SECRET;
+  if (secret && signature) {
+    const expected = crypto.createHmac("sha256", secret).update(rawBody).digest("hex");
+    if (signature !== expected) {
+      console.warn("LS webhook: firma invalida");
+      return res.status(401).json({ error: "invalid signature" });
+    }
+  }
+
+  let event;
+  try { event = JSON.parse(rawBody); }
+  catch { return res.status(400).json({ error: "invalid json" }); }
+
+  const eventName = event.meta?.event_name;
+  if (eventName === "order_created") {
+    const custom = event.data?.attributes?.first_order_item?.product_id
+      ? (event.meta?.custom_data || {})
+      : {};
+    const checkoutId = custom.checkout_id || event.data?.id;
+    if (checkoutId) {
+      paidCheckouts.set(String(checkoutId), {
+        paid: true,
+        customer: event.data?.attributes?.user_email || "unknown",
+        ts: Date.now(),
+      });
+      console.log("LS pago confirmado:", checkoutId);
+    }
+  }
+
+  res.json({ received: true });
+});
 
 // La foto en base64 puede ser grande -> subimos el limite del body.
 app.use(express.json({ limit: "5mb" }));
@@ -426,6 +471,72 @@ app.get("/api/status", (_req, res) => {
   res.json({ demo: DEMO_MODE, provider: DEMO_MODE ? null : AI_PROVIDER, model: DEMO_MODE ? null : activeModel });
 });
 
+// ---------------------------------------------------------------------------
+// Lemon Squeezy — Crear checkout y confirmar pago
+// ---------------------------------------------------------------------------
+app.post("/api/create-premium-checkout", async (req, res) => {
+  const apiKey = process.env.LEMONSQUEEZY_API_KEY;
+  const storeId = process.env.LEMONSQUEEZY_STORE_ID;
+  const variantId = process.env.LEMONSQUEEZY_VARIANT_ID;
+  const appUrl = process.env.APP_URL || `http://localhost:${PORT}`;
+
+  if (!apiKey || !storeId || !variantId) {
+    return res.status(400).json({ error: "Lemon Squeezy no configurado. El administrador debe añadir las claves en .env" });
+  }
+
+  const checkoutId = crypto.randomUUID();
+  try {
+    const lsRes = await fetch("https://api.lemonsqueezy.com/v1/checkouts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        data: {
+          type: "checkouts",
+          attributes: {
+            checkout_data: {
+              custom: { checkout_id: checkoutId },
+              success_url: `${appUrl}/?premium=success&checkout_id=${checkoutId}`,
+              cancel_url: `${appUrl}/?premium=cancelled`,
+            },
+          },
+          relationships: {
+            store: { data: { type: "stores", id: storeId } },
+            variant: { data: { type: "variants", id: variantId } },
+          },
+        },
+      }),
+    });
+
+    if (!lsRes.ok) {
+      const err = await lsRes.text();
+      console.error("LS checkout error:", lsRes.status, err);
+      return res.status(502).json({ error: "Error creando el pago en Lemon Squeezy" });
+    }
+
+    const body = await lsRes.json();
+    const url = body?.data?.attributes?.url;
+    if (!url) return res.status(502).json({ error: "Lemon Squeezy no devolvió URL de pago" });
+
+    paidCheckouts.set(checkoutId, { paid: false, ts: Date.now() });
+    res.json({ url, checkout_id: checkoutId });
+  } catch (e) {
+    console.error("LS checkout exception:", e);
+    res.status(502).json({ error: "Error de conexión con Lemon Squeezy" });
+  }
+});
+
+app.get("/api/confirm-premium", (req, res) => {
+  const id = req.query.checkout_id;
+  if (!id) return res.json({ paid: false });
+  const entry = paidCheckouts.get(String(id));
+  res.json({ paid: !!entry?.paid });
+});
+
+// ---------------------------------------------------------------------------
 // SPA fallback: servir index.html para rutas que no sean API ni archivos.
 app.get("*", (_req, res) => {
   res.sendFile(path.join(STATIC_DIR, "index.html"));

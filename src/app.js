@@ -17,6 +17,7 @@ import { renderProducts } from "./components/products.js";
 import { renderRecipes } from "./components/recipes.js";
 import { renderProgress } from "./components/progress.js";
 import { renderPricing } from "./components/pricing.js";
+import { toast } from "./components/ui.js";
 import { openOnboarding } from "./components/onboarding.js";
 
 
@@ -152,6 +153,25 @@ window.addEventListener("nutveo-lang", () => {
   updateHeader();
   refresh();
 });
+
+// ---- Confirmar pago Premium al volver de Lemon Squeezy ----
+(async function checkPremiumReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("premium") === "success" && params.get("checkout_id")) {
+    const id = params.get("checkout_id");
+    try {
+      const res = await fetch(`/api/confirm-premium?checkout_id=${id}`);
+      const data = await res.json();
+      if (data.paid) {
+        store.setPremium(true);
+        toast("\u{1F389} \u{A1}Pago confirmado! Ya eres Premium.");
+      }
+    } catch (e) {
+      console.warn("Error confirmando premium:", e);
+    }
+    history.replaceState(null, "", "/");
+  }
+})();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");
