@@ -2,7 +2,7 @@ import { SLOTS } from "../store.js";
 import { analyzeFood, fileToCompressedBase64 } from "../api.js";
 import { store } from "../store.js";
 import { openManualModal } from "./manual.js";
-import { escapeHtml, toast } from "./ui.js";
+import { escapeHtml, toast, showLimitModal } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
 
@@ -82,8 +82,21 @@ async function handleFile(root, file, slot, ctx, desc = "") {
 
   // Combina la descripción del usuario con el tramo para dar más contexto a la IA.
   const hint = [desc, t("scan.isMeal", { slot: slotLabel(slot) })].filter(Boolean).join(". ");
+
+  if (!store.canUse("scan")) {
+    root.innerHTML = noCreditsView(ctx);
+    root.querySelector("#go-premium")?.addEventListener("click", () => {
+      store.setPremium(true);
+      toast("🎉 ¡Ya eres Premium! Todos los límites eliminados.");
+      setTimeout(() => ctx.navigate("scanner", { slot }), 1200);
+    });
+    root.querySelector("#credits-back")?.addEventListener("click", () => ctx.navigate("dashboard"));
+    return;
+  }
+
   try {
     const analysis = await analyzeFood(preview.base64, hint);
+    store.useCredit("scan");
     renderResult(root, { analysis, photo: preview.dataUrl, slot }, ctx);
   } catch (err) {
     renderError(root, err.message, ctx);
@@ -147,5 +160,21 @@ const row = (label, value, color) => `
     <span class="rl">${label}</span>
     <span class="rv">${value}</span>
   </div>`;
+
+function noCreditsView(ctx) {
+  return `
+    <div class="scanner">
+      <div class="scanner-ico">${icon('ban', 64)}</div>
+      <h2>${t("scan.limitTitle")}</h2>
+      <p>${t("scan.limitDesc")}</p>
+      <div class="credit-bar">
+        <span>📸 ${store.remainingCredits("scan")}/${2}</span>
+        <span>💬 ${store.remainingCredits("coach")}/${5}</span>
+        <span>🏋️ ${store.remainingCredits("workout")}/${2}</span>
+      </div>
+      <button class="btn btn-primary btn-block" id="go-premium">${t("scan.getPremium")}</button>
+      <button class="btn btn-ghost btn-block" id="credits-back">${t("common.back")}</button>
+    </div>`;
+}
 
 

@@ -41,6 +41,13 @@ export function renderCoach(root) {
     const text = input.value.trim();
     if (!text) return;
     input.value = "";
+
+    if (!store.canUse("coach")) {
+      history.push({ role: "assistant", content: "Límite diario alcanzado. Vuelve mañana o hazte premium para mensajes ilimitados." });
+      paint(log);
+      return;
+    }
+
     if (history.length > 40) history.splice(1, history.length - 30);
     history.push({ role: "user", content: text });
     paint(log);
@@ -50,6 +57,7 @@ export function renderCoach(root) {
       const meals = store.meals();
       const context = { consumed: sumMacros(meals), target: store.goals() };
       const reply = await askCoach(history, context);
+      store.useCredit("coach");
       typing.remove();
       // Detecta comidas que la IA quiere registrar y las añade al diario.
       const { text, added } = logMealsFromReply(reply);

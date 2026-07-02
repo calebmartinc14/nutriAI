@@ -17,6 +17,7 @@ import { renderProducts } from "./components/products.js";
 import { renderRecipes } from "./components/recipes.js";
 import { renderProgress } from "./components/progress.js";
 import { openOnboarding } from "./components/onboarding.js";
+import { toast } from "./components/ui.js";
 
 const viewEl = document.getElementById("view");
 const navItems = document.querySelectorAll(".nav-item[data-view]");
@@ -43,6 +44,7 @@ function refresh() {
 function render(params = {}) {
   const ctx = { navigate, refresh, params };
   renderCurrent(ctx);
+  updateAiBadge();
   // Animación de entrada de la vista (fade-in + slide-up) en cada navegación.
   viewEl.classList.remove("view-enter");
   void viewEl.offsetWidth; // reinicia la animación
@@ -80,10 +82,15 @@ async function updateAiBadge() {
     badge.innerHTML = `${icon('flask', 14)} Demo`;
     badge.title = "Sin API key: se usan datos simulados";
   } else {
-    badge.className = "badge badge-credits";
-    badge.innerHTML = `${icon('bot', 14)} IA`;
+    const premium = store.isPremium();
+    badge.className = `badge ${premium ? "badge-premium" : "badge-credits"}`;
+    badge.innerHTML = premium
+      ? `${icon('crown', 14)} Premium`
+      : `${icon('bot', 14)} ${store.remainingCredits("scan")}📸 ${store.remainingCredits("coach")}💬`;
     const label = status.provider === "openrouter" ? "OpenRouter" : "Gemini";
-    badge.title = `IA real · ${label} (${status.model})`;
+    badge.title = premium
+      ? `Premium · ${label} (${status.model})`
+      : `IA real · ${label} (${status.model}) · ${store.remainingCredits("scan")}/${2} escáner, ${store.remainingCredits("coach")}/${5} coach, ${store.remainingCredits("workout")}/${2} rutinas`;
   }
 }
 
