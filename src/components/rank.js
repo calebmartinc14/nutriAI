@@ -1,6 +1,7 @@
 import { store } from "../store.js";
 import { TIERS, rankedExercises, rankExercise, overallRank } from "../lib/ranking.js";
 import { icon } from "../lib/icons.js";
+import { escapeHtml } from "./ui.js";
 
 export function renderRank(root, { navigate }) {
   const profile = store.profile();
@@ -52,7 +53,7 @@ function heroCard(o) {
     <div class="card rank-hero" style="--tc:${t.color}">
       <div class="rank-emblem">${icon(t.icon, 64)}</div>
       <div class="rank-hero-info">
-        <div class="rank-hero-label">${t.label}</div>
+        <div class="rank-hero-label">${escapeHtml(t.label)}</div>
         <div class="rank-hero-sub">Rango global · media de ${o.count} ejercicio(s)</div>
         <div class="rank-progress-track"><div class="rank-progress-fill" style="width:${Math.round((o.avg / (TIERS.length - 1)) * 100)}%"></div></div>
       </div>
@@ -62,7 +63,7 @@ function heroCard(o) {
 function rankRow(r) {
   if (r.empty) {
     return `<div class="card rank-row empty">
-      <span class="rr-ex">${r.exercise}</span>
+      <span class="rr-ex">${escapeHtml(r.exercise)}</span>
       <span class="rr-empty">Sin registros — regístralo en Entreno</span>
     </div>`;
   }
@@ -70,15 +71,15 @@ function rankRow(r) {
   return `
     <div class="card rank-row" style="--tc:${t.color}">
       <div class="rr-top">
-        <span class="rr-badge">${icon(t.icon, 14)} ${t.label}</span>
-        <span class="rr-ex">${r.exercise}</span>
+        <span class="rr-badge">${icon(t.icon, 14)} ${escapeHtml(t.label)}</span>
+        <span class="rr-ex">${escapeHtml(r.exercise)}</span>
         <span class="rr-1rm">${r.oneRM} kg <small>1RM est.</small></span>
       </div>
       <div class="rank-progress-track"><div class="rank-progress-fill" style="width:${Math.round(r.progress * 100)}%"></div></div>
       <div class="rr-next">
         ${
           r.nextTier
-            ? `Para <b style="color:${r.nextTier.color}">${r.nextTier.label}</b>: ${r.nextWeight} kg (1RM)`
+            ? `Para <b style="color:${r.nextTier.color}">${escapeHtml(r.nextTier.label)}</b>: ${r.nextWeight} kg (1RM)`
             : `Rango maximo alcanzado! ${icon('flame', 14)}`
         }
       </div>

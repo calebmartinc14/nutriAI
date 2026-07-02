@@ -1,7 +1,7 @@
 # Nutveo — Web (local) 🥗
 
 Versión web del tracker de macros con IA. Pensada para correr **en tu máquina**
-sin montar nada en la nube. Frontend en HTML/CSS/JS puro (sin build step) +
+sin montar nada en la nube. Frontend en HTML/CSS/JS puro (Vite build) +
 un backend Express mínimo que guarda la API key y hace de proxy a la IA.
 
 ## Arrancar en local
@@ -52,20 +52,36 @@ Navegador (public/)                 server.js (Express)            Gemini API
 ```
 web/
 ├── server.js              # Express: estáticos + proxy IA + modo demo
+├── vite.config.js         # Configuración de Vite
+├── wrangler.toml          # Despliegue a Cloudflare Pages
 ├── .env.example
 ├── package.json
-└── public/
-    ├── index.html
-    ├── css/styles.css
-    └── js/
-        ├── app.js                 # router + header
-        ├── store.js               # estado + localStorage
-        ├── api.js                 # llamadas al backend + compresión imagen
-        └── components/
-            ├── rings.js           # anillos SVG
-            ├── dashboard.js
-            ├── scanner.js
-            ├── coach.js
-            ├── manual.js          # modal registro manual
-            └── ui.js              # toast
+├── index.html             # Entry point (Vite)
+├── dist/                  # Build de producción
+├── public/
+│   ├── css/styles.css
+│   ├── sw.js              # Service Worker (PWA)
+│   └── manifest.json
+└── src/
+    ├── app.js             # router + header
+    ├── store.js           # estado + localStorage
+    ├── api.js             # llamadas al backend + compresión imagen
+    ├── auth.js            # autenticación Supabase
+    ├── cloud.js           # sincronización con Supabase
+    ├── config.js          # credenciales Supabase
+    ├── lib/
+    │   ├── icons.js       # SVG icons
+    │   ├── i18n.js        # internacionalización
+    │   ├── ranking.js     # sistema de rangos
+    │   ├── recipes.js     # escalado de recetas
+    │   ├── exercise_db.js # base de datos de ejercicios
+    │   └── supabase.js    # cliente Supabase lazy
+    └── components/
+        ├── rings.js       # anillos SVG
+        ├── dashboard.js
+        ├── scanner.js
+        ├── coach.js
+        ├── manual.js      # modal registro manual
+        ├── ui.js          # toast + escapeHtml
+        ├── ...            # resto de componentes
 ```

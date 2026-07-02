@@ -1,5 +1,5 @@
 import { store, SLOTS } from "../store.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
 import { searchProducts, getProductByBarcode } from "../api.js";
@@ -112,8 +112,8 @@ function card(p, i) {
     <div class="card prod-item" data-i="${i}">
       ${thumb}
       <div class="prod-info">
-        <div class="prod-name">${esc(p.nombre)}</div>
-        <div class="prod-meta">${esc(p.marca || "")} · ${Math.round(p.kcal)} kcal/100g · P${r1(p.p)} C${r1(p.c)} G${r1(p.f)}</div>
+        <div class="prod-name">${escapeHtml(p.nombre)}</div>
+        <div class="prod-meta">${escapeHtml(p.marca || "")} · ${Math.round(p.kcal)} kcal/100g · P${r1(p.p)} C${r1(p.c)} G${r1(p.f)}</div>
         <div class="prod-add hidden" data-form="${i}">
           <input class="prod-g" type="number" inputmode="numeric" value="100" /> g
           <select class="prod-slot">${SLOTS.map((s) => `<option value="${s.id}">${slotLabel(s.id)}</option>`).join("")}</select>
@@ -151,4 +151,4 @@ function bindResults(root, list) {
 }
 
 const r1 = (n) => Math.round((n || 0) * 10) / 10;
-function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+

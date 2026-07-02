@@ -1,5 +1,5 @@
 import { store, SLOTS, sumMacros } from "../store.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { t, getLocale, dayLetters } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
 
@@ -222,8 +222,4 @@ function rangeLabel(monday) {
   return `${fmt(monday)} – ${fmt(sunday)}`;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
-  );
-}
+

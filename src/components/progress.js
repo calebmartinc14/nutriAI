@@ -1,6 +1,7 @@
 import { store } from "../store.js";
 import { t, getLocale } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
+import { escapeHtml } from "./ui.js";
 
 // Progreso de fuerza por ejercicio: 1RM estimado (Epley) a lo largo del tiempo.
 let selected = null;
@@ -27,7 +28,7 @@ export function renderProgress(root) {
       <p class="page-sub">${t("prog.subtitle")}</p>
     </div>
     <select id="pg-ex" class="pg-select">
-      ${exercises.map((e) => `<option value="${attr(e)}" ${e === selected ? "selected" : ""}>${esc(e)}</option>`).join("")}
+      ${exercises.map((e) => `<option value="${attr(e)}" ${e === selected ? "selected" : ""}>${escapeHtml(e)}</option>`).join("")}
     </select>
     <div id="pg-body"></div>
   `;
@@ -116,4 +117,4 @@ function stat(label, value, unit, color) {
   return `<div class="card stat-card"><div class="stat-val" style="color:${color}">${value}</div><div class="stat-unit">${unit}</div><div class="stat-label">${label}</div></div>`;
 }
 function attr(s) { return String(s).replace(/"/g, "&quot;"); }
-function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+

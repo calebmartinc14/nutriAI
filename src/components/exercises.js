@@ -1,6 +1,6 @@
 import { store } from "../store.js";
 import { loadExerciseDB, muscleOptions, equipOptions, MUSCLE_LABELS, EQUIP_LABELS, IMG_BASE, youtubeSearch } from "../lib/exercise_db.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { icon } from "../lib/icons.js";
 
 const mLabel = (k) => MUSCLE_LABELS[k] || k;
@@ -74,7 +74,7 @@ export async function openExerciseExplorer({ onAdd } = {}) {
       <div class="ex-item" data-id="${attr(e.id)}">
         ${thumb}
         <div class="ex-item-info">
-          <div class="ex-item-name">${esc(e.name)}</div>
+          <div class="ex-item-name">${escapeHtml(e.name)}</div>
           <div class="ex-item-meta">${mLabel(e.muscle)} · ${eLabel(e.equipment)}</div>
         </div>
         <div class="ex-item-actions">
@@ -114,7 +114,7 @@ export function openMiniPlayer(ex) {
   const hasImgs = ex.images && ex.images.length;
   pip.innerHTML = `
     <div class="pip-head">
-      <span class="pip-title">${esc(ex.name)}</span>
+      <span class="pip-title">${escapeHtml(ex.name)}</span>
       <button class="pip-x" title="Cerrar">${icon('x', 15)}</button>
     </div>
     <div class="pip-body">
@@ -175,4 +175,4 @@ function makeDraggable(el, handle) {
 }
 
 function attr(s) { return String(s).replace(/"/g, "&quot;"); }
-function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+

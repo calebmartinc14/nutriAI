@@ -2,7 +2,7 @@ import { store, parseLocalDate, todayKey } from "../store.js";
 import { generateWorkout } from "../api.js";
 import { isRanked } from "../lib/ranking.js";
 import { openExerciseExplorer } from "./exercises.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { icon } from "../lib/icons.js";
 
 // Base de ejercicios. NO incluye sentadilla ni peso muerto.
@@ -302,8 +302,8 @@ function bind(root) {
   aiBtn?.addEventListener("click", async () => {
     aiBtn.disabled = true; aiBtn.textContent = "Generando...";
     aiOut.classList.remove("hidden"); aiOut.innerHTML = `<div class="spinner" style="margin:16px auto"></div>`;
-    try { const plan = await generateWorkout(profile, days); aiOut.innerHTML = `<pre class="wk-ai-text">${esc(plan)}</pre>`; }
-    catch (e) { aiOut.innerHTML = `<p class="hist-note">No se pudo generar: ${esc(e.message)}</p>`; toast("Error generando la rutina"); }
+    try { const plan = await generateWorkout(profile, days); aiOut.innerHTML = `<pre class="wk-ai-text">${escapeHtml(plan)}</pre>`; }
+    catch (e) { aiOut.innerHTML = `<p class="hist-note">No se pudo generar: ${escapeHtml(e.message)}</p>`; toast("Error generando la rutina"); }
     finally { aiBtn.disabled = false; aiBtn.innerHTML = `${icon('sparkles', 16)} Generar con IA`; }
   });
 
@@ -372,8 +372,8 @@ function exerciseRow(ex, focus, sc, uid) {
     <div class="wk-ex-wrap">
       <div class="wk-ex" data-toggle="${uid}">
         <div class="wk-ex-info">
-          <span class="wk-ex-name">${esc(ex.name)} ${ranked ? `<span class="ranked-dot" title="Cuenta para tu rango">${icon('star', 12)}</span>` : ""}</span>
-          <span class="wk-ex-muscle">${esc(ex.muscle)}${sc ? ` - sugerido ${sc.sets}x${sc.reps}` : ""} - hoy: ${todayTxt}</span>
+          <span class="wk-ex-name">${escapeHtml(ex.name)} ${ranked ? `<span class="ranked-dot" title="Cuenta para tu rango">${icon('star', 12)}</span>` : ""}</span>
+          <span class="wk-ex-muscle">${escapeHtml(ex.muscle)}${sc ? ` - sugerido ${sc.sets}x${sc.reps}` : ""} - hoy: ${todayTxt}</span>
         </div>
         ${ex.custom
           ? `<button class="ex-remove" data-rmcustom="${ex.id}" data-focus="${focus}" title="Quitar ejercicio">${icon('trash-2', 14)}</button>`
@@ -434,7 +434,7 @@ function routineDay(rid, d, n) {
       <div class="mr-wd-row">${wdChips}</div>
       <div class="mr-exs">
         ${d.exercises.length
-          ? d.exercises.map((e, i) => `<div class="mr-ex"><span>${esc(e.name)}${e.muscle ? ` - <span class="mr-ex-m">${esc(e.muscle)}</span>` : ""}</span><button class="set-del" data-rmrex="${rid}|${d.id}|${i}" title="Quitar">${icon('x', 12)}</button></div>`).join("")
+          ? d.exercises.map((e, i) => `<div class="mr-ex"><span>${escapeHtml(e.name)}${e.muscle ? ` - <span class="mr-ex-m">${escapeHtml(e.muscle)}</span>` : ""}</span><button class="set-del" data-rmrex="${rid}|${d.id}|${i}" title="Quitar">${icon('x', 12)}</button></div>`).join("")
           : `<div class="meal-empty" style="padding-left:0">Sin ejercicios este día</div>`}
       </div>
       <button class="wk-add-ex wk-add-small" data-addtoday="${rid}|${d.id}">${icon('book-open', 14)} Base de datos</button>
@@ -535,7 +535,7 @@ function workoutHistorySection() {
 
     if (daySessions.length || dayLifts.length) {
       if (daySessions.length) {
-        detail += `<div class="cal-detail-sesiones"><span class="cal-detail-label">Sesiones:</span> ${daySessions.map(s => esc(s.focus)).join(', ')}</div>`;
+        detail += `<div class="cal-detail-sesiones"><span class="cal-detail-label">Sesiones:</span> ${daySessions.map(s => escapeHtml(s.focus)).join(', ')}</div>`;
       }
       if (dayLifts.length) {
         const byEx = {};
@@ -544,12 +544,12 @@ function workoutHistorySection() {
         }
         detail += `<div class="cal-detail-ejercicios">`;
         for (const [ex, sets] of Object.entries(byEx)) {
-          detail += `<div class="wh-ex"><span class="wh-ex-name">${esc(ex)}</span><span class="wh-ex-sets">${sets.join(", ")}</span></div>`;
+          detail += `<div class="wh-ex"><span class="wh-ex-name">${escapeHtml(ex)}</span><span class="wh-ex-sets">${sets.join(", ")}</span></div>`;
         }
         detail += `</div>`;
       }
     } else if (scheduled[selDate]?.length) {
-      detail += `<p class="hist-note">No entrenaste este día. Tocaba: ${scheduled[selDate].map(s => `${esc(s.routineName)}: ${esc(s.dayLabel || 'Día sin etiqueta')}`).join(', ')}.</p>`;
+      detail += `<p class="hist-note">No entrenaste este día. Tocaba: ${scheduled[selDate].map(s => `${escapeHtml(s.routineName)}: ${escapeHtml(s.dayLabel || 'Día sin etiqueta')}`).join(', ')}.</p>`;
     } else {
       detail += `<p class="hist-note">No hubo entreno este día ni estaba programado.</p>`;
     }
@@ -576,4 +576,4 @@ function workoutHistorySection() {
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
 
 function attr(s) { return String(s).replace(/"/g, "&quot;"); }
-function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+

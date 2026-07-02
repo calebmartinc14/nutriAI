@@ -2,7 +2,7 @@ import { CLOUD_ENABLED } from "../lib/supabase.js";
 import { TIERS } from "../lib/ranking.js";
 import { store } from "../store.js";
 import * as cloud from "../cloud.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { icon } from "../lib/icons.js";
 
 export function renderLeague(root) {
@@ -95,8 +95,4 @@ function boardRow(row, pos, isMe) {
     </div>`;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
-  );
-}
+

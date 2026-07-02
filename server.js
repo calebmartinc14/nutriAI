@@ -2,14 +2,36 @@ import express from "express";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
+import helmet from "helmet";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import { existsSync } from "node:fs";
 
 const app = express();
+
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(cors());
+
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 20,
+  validate: { xForwardedForHeader: false },
+});
+app.use("/api/", limiter);
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 6,
+  validate: { xForwardedForHeader: false },
+});
+app.use("/api/analyze-food", aiLimiter);
+app.use("/api/coach", aiLimiter);
+
 // La foto en base64 puede ser grande -> subimos el limite del body.
-app.use(express.json({ limit: "12mb" }));
+app.use(express.json({ limit: "5mb" }));
 
 // En producción (dist/) servimos el build de Vite; si no, servimos public/ (dev).
 const STATIC_DIR = existsSync(path.join(__dirname, "dist"))
@@ -129,7 +151,14 @@ app.post("/api/analyze-food", async (req, res) => {
 // POST /api/coach  -> chat con el coach nutricional (mantiene contexto)
 // ---------------------------------------------------------------------------
 app.post("/api/coach", async (req, res) => {
-  const { messages = [], context } = req.body ?? {};
+  let { messages = [], context } = req.body ?? {};
+
+  if (!Array.isArray(messages) || messages.length > 50) {
+    return res.status(400).json({ error: "Formato de mensajes inválido" });
+  }
+  messages = messages.slice(-30).filter((m) =>
+    m && typeof m === "object" && typeof m.content === "string" && m.content.length <= 2000
+  );
 
   if (DEMO_MODE) {
     await wait(700);
@@ -239,6 +268,24 @@ series x repeticiones. Añade una nota breve de descanso y técnica. Sé conciso
 });
 
 // ---------------------------------------------------------------------------
+// Cache simple para Open Food Facts (5 min TTL)
+// ---------------------------------------------------------------------------
+const offerCache = new Map();
+const OFF_TTL = 5 * 60 * 1000;
+function cachedFetch(url, ttl = OFF_TTL) {
+  const cached = offerCache.get(url);
+  if (cached && Date.now() - cached.ts < ttl) return cached.data;
+  return null;
+}
+function setCache(url, data) {
+  offerCache.set(url, { data, ts: Date.now() });
+  if (offerCache.size > 200) {
+    const oldest = [...offerCache.entries()].sort((a, b) => a[1].ts - b[1].ts)[0];
+    if (oldest) offerCache.delete(oldest[0]);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/product-search  -> proxy a Open Food Facts (evita CORS)
 // ---------------------------------------------------------------------------
 app.post("/api/product-search", async (req, res) => {
@@ -250,6 +297,10 @@ app.post("/api/product-search", async (req, res) => {
       fields: "code,product_name,brands,image_front_small_url,nutriments",
     });
     if (hacendado) params.set("brands_tags", "hacendado");
+    const cacheKey = `search:${params.toString()}`;
+    const cached = cachedFetch(cacheKey);
+    if (cached) return res.json({ products: cached, cached: true });
+
     const r = await fetch(`https://world.openfoodfacts.org/cgi/search.pl?${params}`, {
       headers: { "User-Agent": "Nutveo/1.0 (app de nutricion)" },
     });
@@ -262,6 +313,7 @@ app.post("/api/product-search", async (req, res) => {
         c: p.nutriments?.carbohydrates_100g, f: p.nutriments?.fat_100g,
       }))
       .filter((x) => x.nombre && x.kcal != null);
+    setCache(cacheKey, products);
     res.json({ products });
   } catch (e) {
     console.error(e);
@@ -309,6 +361,9 @@ app.post("/api/product-barcode", async (req, res) => {
   try {
     const code = String(req.body?.barcode || "").replace(/\D/g, "");
     if (!code) return res.status(400).json({ error: "Código no válido" });
+    const cacheKey = `barcode:${code}`;
+    const cached = cachedFetch(cacheKey, 60 * 60 * 1000);
+    if (cached) return res.json({ product: cached, cached: true });
     const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=code,product_name,brands,image_front_small_url,nutriments`, {
       headers: { "User-Agent": "Nutveo/1.0 (app de nutricion)" },
     });
@@ -316,11 +371,13 @@ app.post("/api/product-barcode", async (req, res) => {
     const data = await r.json();
     if (data.status !== 1 || !data.product) return res.status(404).json({ error: "Producto no encontrado" });
     const p = data.product;
-    res.json({ product: {
+    const product = {
       nombre: p.product_name, marca: p.brands, img: p.image_front_small_url,
       kcal: p.nutriments?.["energy-kcal_100g"], p: p.nutriments?.proteins_100g,
       c: p.nutriments?.carbohydrates_100g, f: p.nutriments?.fat_100g,
-    } });
+    };
+    setCache(cacheKey, product);
+    res.json({ product });
   } catch (e) {
     console.error(e);
     res.status(502).json({ error: "Error buscando el producto" });
@@ -330,6 +387,11 @@ app.post("/api/product-barcode", async (req, res) => {
 // Estado del servidor (lo usa el front para mostrar el badge demo/IA real).
 app.get("/api/status", (_req, res) => {
   res.json({ demo: DEMO_MODE, model: DEMO_MODE ? null : GEMINI_MODEL });
+});
+
+// SPA fallback: servir index.html para rutas que no sean API ni archivos.
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(STATIC_DIR, "index.html"));
 });
 
 app.listen(PORT, () => {
