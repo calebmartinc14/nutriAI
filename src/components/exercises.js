@@ -1,4 +1,3 @@
-import { store } from "../store.js";
 import { loadExerciseDB, muscleOptions, equipOptions, MUSCLE_LABELS, EQUIP_LABELS, IMG_BASE, youtubeSearch } from "../lib/exercise_db.js";
 import { escapeHtml, toast } from "./ui.js";
 import { icon } from "../lib/icons.js";

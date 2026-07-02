@@ -2,6 +2,7 @@
 // descarga los datos del usuario al iniciar sesión.
 import { getSupabase } from "./lib/supabase.js";
 import { store } from "./store.js";
+import { setLang } from "./lib/i18n.js";
 
 let USER_ID = null;
 
@@ -53,7 +54,6 @@ export async function pullAll(user) {
   // Propaga el idioma remoto al módulo i18n (variable de módulo).
   const remoteLang = store.lang();
   if (remoteLang) {
-    const { setLang } = await import("./lib/i18n.js");
     setLang(remoteLang);
   }
 

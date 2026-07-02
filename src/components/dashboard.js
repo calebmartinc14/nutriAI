@@ -22,7 +22,16 @@ export function renderDashboard(root, { navigate, refresh }) {
   const diff = goals.calories - (goals.maintenance ?? goals.calories);
   const diffText = diff === 0 ? t("dash.maintword") : diff > 0 ? `+${diff}` : `${diff}`;
 
+  const isPremium = store.isPremium();
+
   root.innerHTML = `
+    <div class="dash-user-badge">
+      <span class="dash-user-type ${isPremium ? 'premium' : 'free'}">
+        ${icon(isPremium ? 'crown' : 'user', 14)}
+        ${isPremium ? 'Premium' : 'Usuario Free'}
+      </span>
+      <button class="dash-view-plans" id="dash-goto-pricing">${icon('sparkles', 14)} Ver planes</button>
+    </div>
     <div class="dash-hero">
       <div class="card rings-card">
         ${calorieRing(consumed.calories, goals.calories)}
@@ -118,6 +127,8 @@ export function renderDashboard(root, { navigate, refresh }) {
   );
 
   root.querySelector("#weekly-review")?.addEventListener("click", openWeeklyReview);
+
+  root.querySelector("#dash-goto-pricing")?.addEventListener("click", () => navigate("pricing"));
 }
 
 // Repaso semanal con IA: calcula tus stats y pide un resumen al coach.

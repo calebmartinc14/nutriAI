@@ -68,7 +68,7 @@ export function renderCoach(root) {
         toast(added.length === 1 ? "Comida añadida a tu diario" : `${added.length} comidas añadidas`);
       }
       history.push({ role: "assistant", content: finalText });
-    } catch (e) {
+    } catch {
       typing.remove();
       history.push({ role: "assistant", content: "Ups, no pude responder ahora. Revisa la conexión." });
     }

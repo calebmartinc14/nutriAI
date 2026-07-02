@@ -69,6 +69,9 @@ let calYear = new Date().getFullYear();
 let calMonth = new Date().getMonth();
 let selDate = null;
 
+// Rutina personal activa en modo entrenamiento (null = modo edición).
+let activeRoutineId = null;
+
 // Construye la lista de ejercicios de un día: por defecto (menos ocultos) + propios.
 function dayExercises(focus, variant) {
   const tpl = TEMPLATES[focus];
@@ -283,6 +286,36 @@ function bind(root) {
     draw(root);
   });
 
+  // Entrenar rutina personal (activa modo entrenamiento con registro de series).
+  root.querySelectorAll("[id^='start-training-']").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeRoutineId = btn.id.replace("start-training-", "");
+      draw(root);
+    });
+  });
+
+  // Volver a edición desde modo entrenamiento.
+  root.querySelectorAll("[id^='exit-training-']").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      activeRoutineId = null;
+      draw(root);
+    });
+  });
+
+  // Marcar día de rutina personal como hecho.
+  root.querySelectorAll("[data-rtdone]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const [rid, did, n] = btn.dataset.rtdone.split("|");
+      const r = store.customRoutines().find((x) => x.id === rid);
+      const d = r?.days.find((x) => x.id === did);
+      if (!d) return;
+      const focus = `${r.name}: ${d.label || "Día " + n}`;
+      const ok = store.logSession(focus);
+      toast(ok ? "Día registrado!" : "Ya estaba marcado");
+      draw(root);
+    });
+  });
+
   // Guardar ejercicio propio
   root.querySelectorAll("[data-saveexercise]").forEach((btn) =>
     btn.addEventListener("click", () => {
@@ -412,14 +445,18 @@ function myRoutinesSection() {
 }
 
 function routineCard(r) {
+  const isActive = r.id === activeRoutineId;
   return `
     <div class="card my-routine">
       <div class="mr-head">
-        <input class="mr-name" type="text" value="${attr(r.name)}" data-routinename="${r.id}" />
-        <button class="ex-remove" data-delroutine="${r.id}" title="Borrar rutina">${icon('trash-2', 14)}</button>
+        <input class="mr-name" type="text" value="${attr(r.name)}" data-routinename="${r.id}" ${isActive ? 'disabled' : ''} />
+        ${isActive ? '' : `<button class="ex-remove" data-delroutine="${r.id}" title="Borrar rutina">${icon('trash-2', 14)}</button>`}
       </div>
-      ${r.days.map((d, i) => routineDay(r.id, d, i + 1)).join("")}
-      <button class="wk-add-ex" data-addday="${r.id}">${icon('plus', 14)} A&ntilde;adir d&iacute;a</button>
+      ${r.days.map((d, i) => isActive ? routineDayTraining(r.id, r.name, d, i + 1) : routineDay(r.id, d, i + 1)).join("")}
+      ${isActive
+        ? `<button class="wk-add-ex" id="exit-training-${r.id}">${icon('arrow-left', 14)} Volver a editar</button>`
+        : `<button class="wk-add-ex" data-addday="${r.id}">${icon('plus', 14)} A&ntilde;adir d&iacute;a</button>
+           <button class="btn btn-primary" id="start-training-${r.id}" style="margin-top:12px">${icon('play', 14)} Entrenar</button>`}
     </div>`;
 }
 
@@ -447,6 +484,51 @@ function routineDay(rid, d, n) {
         <input class="mr-add-name" type="text" placeholder="Nombre del ejercicio" />
         <input class="mr-add-muscle" type="text" placeholder="Músculo (opcional)" />
         <button class="btn btn-primary" data-saverex="${rid}|${d.id}">Añadir</button>
+      </div>
+    </div>`;
+}
+
+function routineDayTraining(rid, routineName, d, n) {
+  const focus = `${routineName}: ${d.label || "Día " + n}`;
+  const done = store.hasSessionToday(focus);
+  return `
+    <div class="mr-day">
+      <div class="mr-day-head">
+        <span class="mr-day-n">Día ${n}</span>
+        <span class="wk-day-focus">${escapeHtml(d.label || "Sin etiqueta")}</span>
+        <button class="wk-done-btn ${done ? "done" : ""}" data-rtdone="${rid}|${d.id}|${n}">${done ? `${icon('check', 12)} Hecho` : "Marcar hecho"}</button>
+      </div>
+      <div class="wk-ex-list">
+        ${d.exercises.length
+          ? d.exercises.map((ex, i) => routineExerciseRow(ex, `${rid}-${d.id}-${i}`)).join("")
+          : `<p class="hist-note" style="padding:8px 0">Sin ejercicios. A&ntilde;ade ejercicios desde la vista de edici&oacute;n.</p>`}
+      </div>
+    </div>`;
+}
+
+function routineExerciseRow(ex, uid) {
+  const sets = store.liftsForDay(ex.name);
+  const todayTxt = sets.length ? sets.map((s) => `${s.kg}x${s.reps}`).join(", ") : "sin series hoy";
+  const setsList = sets
+    .map((s, i) => `<div class="set-item"><span>Serie ${i + 1}: <b>${s.kg} kg x ${s.reps}</b></span><button class="set-del" data-del-set="${s.id}" data-uid="${uid}" title="Borrar serie">${icon('x', 12)}</button></div>`)
+    .join("");
+
+  return `
+    <div class="wk-ex-wrap">
+      <div class="wk-ex" data-toggle="${uid}">
+        <div class="wk-ex-info">
+          <span class="wk-ex-name">${escapeHtml(ex.name)}</span>
+          <span class="wk-ex-muscle">${escapeHtml(ex.muscle)} - hoy: ${todayTxt}</span>
+        </div>
+        <span class="wk-ex-caret">${icon('plus-circle', 16)}</span>
+      </div>
+      <div class="wk-ex-log hidden" data-panel="${uid}">
+        ${sets.length ? `<div class="sets-list">${setsList}</div>` : ""}
+        <div class="set-add-row">
+          <input class="set-kg" type="number" inputmode="decimal" step="0.5" placeholder="kg" />
+          <input class="set-reps" type="number" inputmode="numeric" placeholder="reps" />
+          <button class="btn btn-primary set-add-btn" data-add-set="${attr(ex.name)}" data-uid="${uid}">${icon('plus', 14)} Serie</button>
+        </div>
       </div>
     </div>`;
 }

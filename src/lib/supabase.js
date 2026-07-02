@@ -6,7 +6,7 @@ let client = null;
 export async function getSupabase() {
   if (!CLOUD_ENABLED) return null;
   if (!client) {
-    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
+    const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2.39.0");
     client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
   return client;
