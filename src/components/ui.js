@@ -10,3 +10,9 @@ export function toast(msg, ms = 2200) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.remove(), ms);
 }
+
+export function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
+}

@@ -2,7 +2,7 @@ import { store, SLOTS, sumMacros } from "../store.js";
 import { calorieRing, macroRing, animateRings } from "./rings.js";
 import { openManualModal } from "./manual.js";
 import { askCoach } from "../api.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { t, slotLabel, dayLetters } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
 
@@ -229,8 +229,4 @@ function progressCard() {
     </div>`;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
-  );
-}
+

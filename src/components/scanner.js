@@ -2,7 +2,7 @@ import { SLOTS } from "../store.js";
 import { analyzeFood, fileToCompressedBase64 } from "../api.js";
 import { store } from "../store.js";
 import { openManualModal } from "./manual.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
 
@@ -148,8 +148,4 @@ const row = (label, value, color) => `
     <span class="rv">${value}</span>
   </div>`;
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
-  );
-}
+

@@ -25,7 +25,7 @@ Guía paso a paso. Todo con planes **gratuitos**. Tiempo estimado: ~30-45 min.
 ## 4) Conseguir tus claves
 1. Ve a **Project Settings → API**.
 2. Copia **Project URL** y la clave **anon public**.
-3. Abre `web/public/js/config.js` y pégalas:
+3. Abre `web/src/config.js` y pégalas:
    ```js
    export const SUPABASE_URL = "https://TUPROYECTO.supabase.co";
    export const SUPABASE_ANON_KEY = "eyJ...."; // anon public
@@ -52,8 +52,8 @@ Recomendado: **Cloudflare Pages** o **Vercel** (ambos gratis).
 2. En https://pages.cloudflare.com → *Create a project* → conecta el repo.
 3. Configuración de build:
    - **Framework preset:** None
-   - **Build command:** (vacío)
-   - **Build output directory:** `web/public`
+   - **Build command:** `npm run build`
+   - **Build output directory:** `web/dist`
 4. *Deploy*. Te dará una URL pública tipo `https://nutveo.pages.dev`.
 
 > Nota: con este hosting estático, el servidor local `server.js` no se usa; las

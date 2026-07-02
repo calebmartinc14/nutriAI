@@ -1,5 +1,5 @@
 import { store, SLOTS } from "../store.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
 
@@ -125,6 +125,4 @@ export function openManualModal(slotId = "breakfast", onSaved, prefill = null, e
   }
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
+

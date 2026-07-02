@@ -1,6 +1,6 @@
 import { store, sumMacros, SLOTS } from "../store.js";
 import { askCoach } from "../api.js";
-import { toast } from "./ui.js";
+import { toast, escapeHtml } from "./ui.js";
 import { icon } from "../lib/icons.js";
 
 // Chat con el Coach Nutricional IA. Mantiene el historial en memoria de sesion
@@ -41,6 +41,7 @@ export function renderCoach(root) {
     const text = input.value.trim();
     if (!text) return;
     input.value = "";
+    if (history.length > 40) history.splice(1, history.length - 30);
     history.push({ role: "user", content: text });
     paint(log);
 
@@ -161,8 +162,4 @@ function addTyping(log) {
   return el;
 }
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
-  );
-}
+

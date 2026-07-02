@@ -93,7 +93,7 @@ export async function push(entity, op, data) {
 // ---- Ligas ----
 export async function createLeague(name) {
   const sb = await getSupabase();
-  const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+  const code = crypto.randomUUID().slice(0, 6).toUpperCase();
   const { data, error } = await sb.from("leagues").insert({ name, code, owner_id: USER_ID }).select().single();
   if (error) throw error;
   await joinLeague(code);

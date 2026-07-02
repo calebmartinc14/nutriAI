@@ -1,7 +1,7 @@
 import { store, SLOTS } from "../store.js";
 import { RECIPES, COMIDA_PCT, COMIDA_SLOT, escalarReceta, totalesPlan } from "../lib/recipes.js";
 import { estimateFood } from "../api.js";
-import { toast } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
 
@@ -47,7 +47,7 @@ function userCard(r) {
     <div class="card rec-card" data-userrec="${r.id}">
       <div class="rec-emoji">${icon('book', 30)}</div>
       <div class="rec-info">
-        <div class="rec-title">${esc(r.name)}</div>
+        <div class="rec-title">${escapeHtml(r.name)}</div>
         <div class="rec-meal">${Math.round(tt.calories)} kcal · ${r.ingredients.length} ${t("rec.ingr")}</div>
       </div>
     </div>`;
@@ -60,10 +60,10 @@ function openUserRecipe(root, id) {
   const detail = root.querySelector("#rec-detail");
   detail.innerHTML = `
     <div class="card rec-detail-card">
-      <div class="rec-detail-head"><span>${icon('book', 18)} <b>${esc(r.name)}</b></span><button class="ex-close" id="ur-x">${icon('x', 18)}</button></div>
+      <div class="rec-detail-head"><span>${icon('book', 18)} <b>${escapeHtml(r.name)}</b></span><button class="ex-close" id="ur-x">${icon('x', 18)}</button></div>
       <div class="section-title" style="margin-top:8px">${t("rec.ingredients")}</div>
       <div class="rec-ings">
-        ${r.ingredients.map((i) => `<div class="rec-ing"><span>${esc(i.name)} · ${i.grams} g</span><b>${Math.round(i.calories)} kcal</b></div>`).join("")}
+        ${r.ingredients.map((i) => `<div class="rec-ing"><span>${escapeHtml(i.name)} · ${i.grams} g</span><b>${Math.round(i.calories)} kcal</b></div>`).join("")}
       </div>
       <div class="rec-totals">≈ ${Math.round(tt.calories)} kcal · ${Math.round(tt.protein)}P · ${Math.round(tt.carbs)}C · ${Math.round(tt.fat)}G</div>
       <div class="rec-addrow">
@@ -183,7 +183,7 @@ function card(r) {
     <div class="card rec-card" data-rec="${r.id}">
       <div class="rec-emoji">${icon(r.icon, 30)}</div>
       <div class="rec-info">
-        <div class="rec-title">${esc(r.titulo)}</div>
+        <div class="rec-title">${escapeHtml(r.titulo)}</div>
         <div class="rec-meal">${cap(r.comida)}</div>
       </div>
     </div>`;
@@ -205,7 +205,7 @@ function openRecipe(root, id) {
     detail.innerHTML = `
       <div class="card rec-detail-card">
         <div class="rec-detail-head">
-          <span>${icon(r.icon, 18)} <b>${esc(r.titulo)}</b></span>
+          <span>${icon(r.icon, 18)} <b>${escapeHtml(r.titulo)}</b></span>
           <button class="ex-close" id="rec-x">${icon('x', 18)}</button>
         </div>
 
@@ -216,7 +216,7 @@ function openRecipe(root, id) {
 
         <div class="section-title" style="margin-top:14px">${t("rec.ingAdjusted")}</div>
         <div class="rec-ings">
-          ${plan.map((it) => `<div class="rec-ing"><span>${esc(it.nombre)}</span><b>${it.gramos} g</b></div>`).join("")}
+          ${plan.map((it) => `<div class="rec-ing"><span>${escapeHtml(it.nombre)}</span><b>${it.gramos} g</b></div>`).join("")}
         </div>
 
         <div class="rec-totals">
@@ -224,7 +224,7 @@ function openRecipe(root, id) {
         </div>
 
         <div class="section-title" style="margin-top:14px">${t("rec.steps")}</div>
-        <ol class="rec-steps">${r.pasos.map((p) => `<li>${esc(p)}</li>`).join("")}</ol>
+        <ol class="rec-steps">${r.pasos.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}</ol>
 
         <button class="btn btn-primary btn-block" id="rec-add">${t("rec.addDiary")} (${cap(r.comida)})</button>
       </div>`;
@@ -251,4 +251,4 @@ function openRecipe(root, id) {
 }
 
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
-function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
