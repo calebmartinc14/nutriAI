@@ -915,20 +915,105 @@ html, body {
   color: #fff;
 }
 
-/* ====================== RUTINA ACTIVA ====================== */
-.active-routine-name { color: var(--cal); }
-.mr-active { border-color: var(--cal) !important; box-shadow: 0 0 0 1px var(--cal); }
-.mr-active-badge { font-size: 12px; font-weight: 700; color: var(--cal); white-space: nowrap; }
-.mr-head-actions { display: flex; align-items: center; gap: 6px; }
-.mr-index-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 8px; }
-.mr-index-info { flex: 1; min-width: 0; }
-.mr-index-name { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
-.mr-index-meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
-.mr-index-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.mr-ex-wrap { margin-bottom: 8px; }
-.mr-set-row { margin: 6px 0 0 12px; }
-.mr-set-kg, .mr-set-reps { width: 72px; }
+/* ====================== USER TYPE BADGE (DASHBOARD) ====================== */
+.dash-user-badge {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+}
+.dash-user-type {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 700; padding: 6px 14px; border-radius: 20px;
+  border: 1px solid var(--stroke);
+}
+.dash-user-type.free {
+  color: var(--text-2); background: var(--surface-2);
+}
+.dash-user-type.premium {
+  background: linear-gradient(135deg, #f5af19, #f12711); color: #fff;
+  border-color: transparent;
+}
+.dash-view-plans {
+  background: none; border: 1px solid var(--stroke); color: var(--cal);
+  font-size: 12px; padding: 5px 12px; border-radius: 14px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 4px;
+}
+.dash-view-plans:hover {
+  background: var(--surface-2);
+}
 
-/* ====================== ACCIONES IA ====================== */
-.ai-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-.ai-actions .btn { flex: 1; min-width: 120px; font-size: 13px; padding: 11px 14px; }
+/* ====================== PRICING / PLANES PAGE ====================== */
+.pricing-page { max-width: 680px; margin: 0 auto; padding: 8px 0 32px; }
+
+.pricing-header { text-align: center; margin-bottom: 28px; }
+.pricing-header h2 { margin: 0 0 6px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.pricing-header p { margin: 0; color: var(--text-2); font-size: 14px; }
+
+.pricing-cols {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+}
+
+.pricing-card {
+  background: var(--surface); border-radius: 18px;
+  border: 1px solid var(--stroke); overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.pricing-premium {
+  border-color: #f5af19; box-shadow: 0 0 0 2px rgba(245,175,25,0.15);
+  position: relative;
+}
+
+.pricing-card-head {
+  text-align: center; padding: 24px 16px 16px;
+}
+.pricing-icon { margin-bottom: 8px; opacity: 0.6; }
+.premium-icon { opacity: 1; color: #f5af19; }
+.pricing-plan-name { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.premium-name { background: linear-gradient(135deg, #f5af19, #e74c3c); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.pricing-price { font-size: 28px; font-weight: 800; }
+.pricing-price-label { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+
+.pricing-features { padding: 0 16px 16px; flex: 1; }
+.pricing-feature-title { font-size: 12px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.pricing-feat {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; padding: 5px 0; color: var(--text-1);
+}
+.pricing-feat svg { color: var(--cal); flex-shrink: 0; }
+.pricing-feat.limit { font-size: 12px; color: var(--text-2); }
+.pricing-feat.limit b { color: var(--text-1); }
+
+.pricing-card-foot {
+  text-align: center; padding: 12px 16px 20px;
+}
+.pricing-badge {
+  display: inline-block; font-size: 13px; font-weight: 700;
+  padding: 8px 18px; border-radius: 20px;
+}
+.pricing-badge.current {
+  background: var(--surface-2); color: var(--text-2); border: 1px solid var(--stroke);
+}
+.pricing-badge.inactive {
+  background: var(--surface-2); color: var(--text-3); border: 1px solid var(--stroke);
+  opacity: 0.5;
+}
+.pricing-badge.premium-current {
+  background: linear-gradient(135deg, #f5af19, #e74c3c); color: #fff;
+}
+
+.btn-premium {
+  width: 100%; padding: 12px; font-size: 15px;
+  background: linear-gradient(135deg, #f5af19, #e74c3c); color: #fff; border: none;
+  border-radius: 12px; font-weight: 700; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-premium:hover {
+  opacity: 0.9;
+}
+
+.pricing-footer-note {
+  margin-top: 20px; text-align: center; font-size: 12px;
+  color: var(--text-3); display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+
+@media (max-width: 500px) {
+  .pricing-cols { grid-template-columns: 1fr; }
+}

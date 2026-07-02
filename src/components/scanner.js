@@ -2,7 +2,7 @@ import { SLOTS } from "../store.js";
 import { analyzeFood, fileToCompressedBase64 } from "../api.js";
 import { store } from "../store.js";
 import { openManualModal } from "./manual.js";
-import { escapeHtml, toast, showLimitModal } from "./ui.js";
+import { escapeHtml, toast } from "./ui.js";
 import { t, slotLabel } from "../lib/i18n.js";
 import { icon } from "../lib/icons.js";
 
@@ -84,7 +84,7 @@ async function handleFile(root, file, slot, ctx, desc = "") {
   const hint = [desc, t("scan.isMeal", { slot: slotLabel(slot) })].filter(Boolean).join(". ");
 
   if (!store.canUse("scan")) {
-    root.innerHTML = noCreditsView(ctx);
+    root.innerHTML = noCreditsView();
     root.querySelector("#go-premium")?.addEventListener("click", () => {
       store.setPremium(true);
       toast("🎉 ¡Ya eres Premium! Todos los límites eliminados.");
@@ -161,7 +161,7 @@ const row = (label, value, color) => `
     <span class="rv">${value}</span>
   </div>`;
 
-function noCreditsView(ctx) {
+function noCreditsView() {
   return `
     <div class="scanner">
       <div class="scanner-ico">${icon('ban', 64)}</div>

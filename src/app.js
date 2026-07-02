@@ -16,8 +16,10 @@ import { renderLeague } from "./components/league.js";
 import { renderProducts } from "./components/products.js";
 import { renderRecipes } from "./components/recipes.js";
 import { renderProgress } from "./components/progress.js";
-import { openOnboarding } from "./components/onboarding.js";
+import { renderPricing } from "./components/pricing.js";
 import { toast } from "./components/ui.js";
+import { openOnboarding } from "./components/onboarding.js";
+
 
 const viewEl = document.getElementById("view");
 const navItems = document.querySelectorAll(".nav-item[data-view]");
@@ -63,6 +65,7 @@ function renderCurrent(ctx) {
   else if (current === "products") renderProducts(viewEl, ctx);
   else if (current === "recipes") renderRecipes(viewEl, ctx);
   else if (current === "coach") renderCoach(viewEl, ctx);
+  else if (current === "pricing") renderPricing(viewEl, ctx);
 }
 
 function updateHeader() {
@@ -156,13 +159,24 @@ window.addEventListener("nutveo-lang", () => {
   refresh();
 });
 
-// Escucha cambios de tema y actualiza el color de la barra de navegación.
-window.addEventListener("nutveo-theme", () => {
-  const t = store.theme();
-  document.documentElement.setAttribute("data-theme", t);
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = t === "light" ? "#FDFBF7" : "#0B0E11";
-});
+// ---- Confirmar pago Premium al volver de Lemon Squeezy ----
+(async function checkPremiumReturn() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("premium") === "success" && params.get("checkout_id")) {
+    const id = params.get("checkout_id");
+    try {
+      const res = await fetch(`/api/confirm-premium?checkout_id=${id}`);
+      const data = await res.json();
+      if (data.paid) {
+        store.setPremium(true);
+        toast("\u{1F389} \u{A1}Pago confirmado! Ya eres Premium.");
+      }
+    } catch (e) {
+      console.warn("Error confirmando premium:", e);
+    }
+    history.replaceState(null, "", "/");
+  }
+})();
 
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/sw.js");

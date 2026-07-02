@@ -239,7 +239,8 @@ export const store = {
     s.meals.push(entry);
     save(s);
     // La foto (base64) no se sube a la nube para no inflar la BD: solo local.
-    const { photo, ...cloudEntry } = entry;
+    const cloudEntry = { ...entry };
+    delete cloudEntry.photo;
     emit("meals", "upsert", cloudEntry);
     return entry;
   },
@@ -258,7 +259,8 @@ export const store = {
     if (!m) return;
     Object.assign(m, fields);
     save(s);
-    const { photo, ...cloud } = m;
+    const cloud = { ...m };
+    delete cloud.photo;
     emit("meals", "upsert", cloud);
   },
 
