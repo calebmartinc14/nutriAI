@@ -40,9 +40,18 @@ const STATIC_DIR = existsSync(path.join(__dirname, "dist"))
 app.use(express.static(STATIC_DIR));
 
 const PORT = process.env.PORT || 3000;
+
+// AI Provider: "gemini" (default) or "openrouter"
+const AI_PROVIDER = process.env.AI_PROVIDER?.trim() || "gemini";
+
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim();
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
-const DEMO_MODE = !GEMINI_API_KEY;
+
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY?.trim();
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL?.trim() || "google/gemini-2.5-flash:free";
+
+const HAS_AI_KEY = AI_PROVIDER === "openrouter" ? !!OPENROUTER_API_KEY : !!GEMINI_API_KEY;
+const DEMO_MODE = !HAS_AI_KEY;
 
 // ---------------------------------------------------------------------------
 // System prompt: obliga a la IA a devolver SOLO JSON con los macros.
@@ -89,6 +98,87 @@ const RESPONSE_SCHEMA = {
 };
 
 // ---------------------------------------------------------------------------
+// AI helper: llama a Gemini o OpenRouter según AI_PROVIDER
+// ---------------------------------------------------------------------------
+async function callAI(systemPrompt, messages, opts = {}) {
+  if (AI_PROVIDER === "openrouter") {
+    return callOpenRouter(systemPrompt, messages, opts);
+  }
+  return callGeminiAPI(systemPrompt, messages, opts);
+}
+
+async function callOpenRouter(systemPrompt, messages, opts = {}) {
+  const body = {
+    model: OPENROUTER_MODEL,
+    messages: [{ role: "system", content: systemPrompt }, ...messages],
+    temperature: opts.temperature ?? 0.2,
+    max_tokens: opts.maxTokens ?? 4096,
+  };
+  if (opts.responseJson) {
+    body.response_format = { type: "json_object" };
+  }
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      "HTTP-Referer": "https://nutveo.app",
+      "X-Title": "Nutveo",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    console.error("OpenRouter error:", res.status, detail);
+    throw new Error(`OpenRouter: ${res.status}`);
+  }
+  const payload = await res.json();
+  return payload?.choices?.[0]?.message?.content ?? "";
+}
+
+async function callGeminiAPI(systemPrompt, messages, opts = {}) {
+  const model = opts.model || GEMINI_MODEL;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+
+  const contents = messages.map((m) => {
+    if (typeof m.content === "string") {
+      return { role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] };
+    }
+    return { role: "user", parts: m.content };
+  });
+
+  const body = {
+    systemInstruction: { parts: [{ text: systemPrompt }] },
+    contents,
+    generationConfig: { temperature: opts.temperature ?? 0.2 },
+  };
+  if (opts.responseJson && opts.responseSchema) {
+    body.generationConfig.responseMimeType = "application/json";
+    body.generationConfig.responseSchema = opts.responseSchema;
+  }
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.text();
+    console.error("Gemini error:", res.status, detail);
+    throw new Error(`Gemini: ${res.status}`);
+  }
+  const payload = await res.json();
+  return payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+}
+
+// Extrae JSON de una respuesta de texto (tolerante a markdown ```json ... ```)
+function extractJSON(text) {
+  const codeBlock = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  if (codeBlock) return JSON.parse(codeBlock[1].trim());
+  return JSON.parse(text.trim());
+}
+
+// ---------------------------------------------------------------------------
 // POST /api/analyze-food  -> foto (base64) a macros
 // ---------------------------------------------------------------------------
 app.post("/api/analyze-food", async (req, res) => {
@@ -97,46 +187,38 @@ app.post("/api/analyze-food", async (req, res) => {
     return res.status(400).json({ error: "Falta imageBase64" });
   }
 
-  // --- Modo demo: sin clave, devolvemos un analisis plausible ---
   if (DEMO_MODE) {
-    await wait(900); // simula latencia de red
+    await wait(900);
     return res.json({ analysis: demoFoodAnalysis(), demo: true });
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-    const geminiRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: `${SYSTEM_PROMPT}\nEscribe "dish_name" y "notes" en el idioma del usuario. ${langLine(req.body?.lang)}` }] },
-        contents: [
-          {
-            role: "user",
-            parts: [
-              { text: mealHint ? `El usuario describe lo que hay en la foto: "${mealHint}". Usa esa información para estimar con MÁS precisión las cantidades y macros.` : "Analiza este plato." },
-              { inlineData: { mimeType, data: imageBase64 } },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          responseMimeType: "application/json",
-          responseSchema: RESPONSE_SCHEMA,
-        },
-      }),
-    });
+    const lang = req.body?.lang;
+    const prompt = `${SYSTEM_PROMPT}\nEscribe "dish_name" y "notes" en el idioma del usuario. ${langLine(lang)}`;
 
-    if (!geminiRes.ok) {
-      const detail = await geminiRes.text();
-      console.error("Gemini error:", geminiRes.status, detail);
-      return res.status(502).json({ error: "Servicio de IA no disponible" });
+    let raw;
+    if (AI_PROVIDER === "openrouter") {
+      const textContent = mealHint
+        ? `El usuario describe lo que hay en la foto: "${mealHint}". Usa esa información para estimar con MÁS precisión las cantidades y macros.`
+        : "Analiza este plato.";
+      raw = await callOpenRouter(prompt, [{
+        role: "user",
+        content: [
+          { type: "text", text: textContent },
+          { type: "image_url", image_url: { url: `data:${mimeType};base64,${imageBase64}` } },
+        ],
+      }], { responseJson: true, temperature: 0.2 });
+    } else {
+      raw = await callGeminiAPI(prompt, [{
+        role: "user",
+        content: [
+          { text: mealHint ? `El usuario describe lo que hay en la foto: "${mealHint}". Usa esa información para estimar con MÁS precisión las cantidades y macros.` : "Analiza este plato." },
+          { inlineData: { mimeType, data: imageBase64 } },
+        ],
+      }], { responseJson: true, responseSchema: RESPONSE_SCHEMA, temperature: 0.2 });
     }
 
-    const payload = await geminiRes.json();
-    const raw = payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
-    const analysis = JSON.parse(raw);
-
+    const analysis = extractJSON(raw);
     if (analysis.is_food === false) {
       return res.status(422).json({ error: "La imagen no contiene comida" });
     }
@@ -180,28 +262,11 @@ sugerir recetas y ajustar el menu. No des consejo medico; recomienda un
 profesional para condiciones de salud. ${contextText}
 ${LOG_INSTRUCTIONS}`.trim();
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-    const geminiRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: coachPrompt }] },
-        contents: messages.map((m) => ({
-          role: m.role === "assistant" ? "model" : "user",
-          parts: [{ text: m.content }],
-        })),
-        generationConfig: { temperature: 0.7 },
-      }),
-    });
+    const reply = await callAI(coachPrompt, messages.map((m) => ({
+      role: m.role,
+      content: m.content,
+    })), { temperature: 0.7 });
 
-    if (!geminiRes.ok) {
-      const detail = await geminiRes.text();
-      console.error("Gemini error:", geminiRes.status, detail);
-      return res.status(502).json({ error: "Servicio de IA no disponible" });
-    }
-
-    const payload = await geminiRes.json();
-    const reply = payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? "...";
     res.json({ reply, demo: false });
   } catch (err) {
     console.error(err);
@@ -241,25 +306,7 @@ series x repeticiones. Añade una nota breve de descanso y técnica. Sé conciso
       `actividad ${profile?.activity ?? "?"}, objetivo ${profile?.goal ?? "?"}. ` +
       `Quiero entrenar ${days ?? 3} días por semana.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-    const geminiRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: trainerPrompt }] },
-        contents: [{ role: "user", parts: [{ text: userMsg }] }],
-        generationConfig: { temperature: 0.6 },
-      }),
-    });
-
-    if (!geminiRes.ok) {
-      const detail = await geminiRes.text();
-      console.error("Gemini error:", geminiRes.status, detail);
-      return res.status(502).json({ error: "Servicio de IA no disponible" });
-    }
-
-    const payload = await geminiRes.json();
-    const plan = payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? "...";
+    const plan = await callAI(trainerPrompt, [{ role: "user", content: userMsg }], { temperature: 0.6 });
     res.json({ plan, demo: false });
   } catch (err) {
     console.error(err);
@@ -331,22 +378,13 @@ app.post("/api/estimate-food", async (req, res) => {
     return res.json({ macros: { calories: Math.round(g * 1.5), protein: Math.round(g * 0.1), carbs: Math.round(g * 0.15), fat: Math.round(g * 0.05) }, demo: true });
   }
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
-    const r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: "Eres un nutricionista. Estima los valores para la cantidad indicada. Devuelve SOLO JSON válido." }] },
-        contents: [{ role: "user", parts: [{ text: `Alimento: ${food}. Cantidad: ${grams} g. Da calorías totales y gramos de proteína, carbohidratos y grasa PARA ESA CANTIDAD.` }] }],
-        generationConfig: {
-          temperature: 0.2, responseMimeType: "application/json",
-          responseSchema: { type: "OBJECT", properties: { calories: { type: "NUMBER" }, protein_g: { type: "NUMBER" }, carbs_g: { type: "NUMBER" }, fat_g: { type: "NUMBER" } }, required: ["calories", "protein_g", "carbs_g", "fat_g"] },
-        },
-      }),
+    const sysPrompt = "Eres un nutricionista. Estima los valores para la cantidad indicada. Devuelve SOLO JSON válido.";
+    const userMsg = `Alimento: ${food}. Cantidad: ${grams} g. Da calorías totales y gramos de proteína, carbohidratos y grasa PARA ESA CANTIDAD.`;
+    const raw = await callAI(sysPrompt, [{ role: "user", content: userMsg }], {
+      temperature: 0.2, responseJson: true,
+      responseSchema: { type: "OBJECT", properties: { calories: { type: "NUMBER" }, protein_g: { type: "NUMBER" }, carbs_g: { type: "NUMBER" }, fat_g: { type: "NUMBER" } }, required: ["calories", "protein_g", "carbs_g", "fat_g"] },
     });
-    if (!r.ok) return res.status(502).json({ error: "IA no disponible" });
-    const payload = await r.json();
-    const o = JSON.parse(payload?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}");
+    const o = extractJSON(raw);
     res.json({ macros: { calories: o.calories, protein: o.protein_g, carbs: o.carbs_g, fat: o.fat_g } });
   } catch (e) {
     console.error(e);
@@ -386,7 +424,8 @@ app.post("/api/product-barcode", async (req, res) => {
 
 // Estado del servidor (lo usa el front para mostrar el badge demo/IA real).
 app.get("/api/status", (_req, res) => {
-  res.json({ demo: DEMO_MODE, model: DEMO_MODE ? null : GEMINI_MODEL });
+  const activeModel = AI_PROVIDER === "openrouter" ? OPENROUTER_MODEL : GEMINI_MODEL;
+  res.json({ demo: DEMO_MODE, provider: DEMO_MODE ? null : AI_PROVIDER, model: DEMO_MODE ? null : activeModel });
 });
 
 // SPA fallback: servir index.html para rutas que no sean API ni archivos.
@@ -395,8 +434,9 @@ app.get("*", (_req, res) => {
 });
 
 app.listen(PORT, () => {
+  const provider = AI_PROVIDER === "openrouter" ? `OpenRouter (${OPENROUTER_MODEL})` : `Gemini (${GEMINI_MODEL})`;
   console.log(`\n  Nutveo corriendo en  http://localhost:${PORT}`);
-  console.log(`  Modo IA: ${DEMO_MODE ? "DEMO (sin clave - macros simulados)" : `REAL (${GEMINI_MODEL})`}\n`);
+  console.log(`  Modo IA: ${DEMO_MODE ? "DEMO (sin clave - macros simulados)" : `REAL · ${provider}`}\n`);
 });
 
 // ---------------------------------------------------------------------------
@@ -415,12 +455,12 @@ function demoFoodAnalysis() {
     { dish_name: "Huevos revueltos con tostada y palta", calories: 390, protein_g: 19, carbs_g: 28, fat_g: 22 },
   ];
   const p = platos[Math.floor(Math.random() * platos.length)];
-  return { is_food: true, ...p, confidence: 0.82, notes: "Modo demo: valores de ejemplo. Anade tu GEMINI_API_KEY para analisis real." };
+  return { is_food: true, ...p, confidence: 0.82, notes: "Modo demo: valores de ejemplo. Añade una API key en .env para análisis real." };
 }
 
 function demoWorkout(days) {
   return (
-    `Modo demo 🏋️ (añade tu GEMINI_API_KEY para un plan personalizado real)\n\n` +
+    `Modo demo 🏋️ (añade una API key en .env para un plan personalizado real)\n\n` +
     `Ejemplo para ${days ?? 3} días/semana — sin sentadillas ni peso muerto:\n\n` +
     `• Día 1 — Empuje: press banca mancuernas, press militar, aperturas, elevaciones laterales, tríceps en polea.\n` +
     `• Día 2 — Tirón: jalón al pecho, remo con mancuerna, face pull, curl con barra, curl martillo.\n` +
@@ -439,10 +479,10 @@ function demoCoachReply(messages) {
     );
   }
   if (last.includes("receta")) {
-    return "Modo demo 🍳 Prueba: bowl de quinoa con pollo, garbanzos y aguacate (~520 kcal, 38g proteina). Anade tu clave de Gemini para respuestas reales y personalizadas a tus macros.";
+    return "Modo demo 🍳 Prueba: bowl de quinoa con pollo, garbanzos y aguacate (~520 kcal, 38g proteina). Añade una API key para respuestas reales y personalizadas a tus macros.";
   }
   if (last.includes("proteina") || last.includes("proteína")) {
-    return "Modo demo 💪 Para subir proteina sin pasarte de calorias: claras, atun, pechuga, yogur griego 0%, tofu. Configura tu GEMINI_API_KEY para consejos a medida.";
+    return "Modo demo 💪 Para subir proteina sin pasarte de calorias: claras, atun, pechuga, yogur griego 0%, tofu. Configura tu API key para consejos a medida.";
   }
-  return "Modo demo 🤖 Soy tu coach. Cuando agregues tu GEMINI_API_KEY en .env te respondere con IA real usando tus macros del dia. Preguntame por recetas, ajustes de menu o como llegar a tu objetivo.";
+  return "Modo demo 🤖 Soy tu coach. Cuando agregues tu API key en .env te responderé con IA real usando tus macros del día. Pregúntame por recetas, ajustes de menú o cómo llegar a tu objetivo.";
 }

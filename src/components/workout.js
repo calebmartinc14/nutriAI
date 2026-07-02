@@ -2,7 +2,7 @@ import { store, parseLocalDate, todayKey } from "../store.js";
 import { generateWorkout } from "../api.js";
 import { isRanked } from "../lib/ranking.js";
 import { openExerciseExplorer } from "./exercises.js";
-import { escapeHtml, toast } from "./ui.js";
+import { escapeHtml, toast, showLimitModal } from "./ui.js";
 import { icon } from "../lib/icons.js";
 
 // Base de ejercicios. NO incluye sentadilla ni peso muerto.
@@ -300,9 +300,13 @@ function bind(root) {
   const aiBtn = root.querySelector("#ai-btn");
   const aiOut = root.querySelector("#ai-out");
   aiBtn?.addEventListener("click", async () => {
+    if (!store.canUse("workout")) {
+      showLimitModal("workout", store.remainingCredits);
+      return;
+    }
     aiBtn.disabled = true; aiBtn.textContent = "Generando...";
     aiOut.classList.remove("hidden"); aiOut.innerHTML = `<div class="spinner" style="margin:16px auto"></div>`;
-    try { const plan = await generateWorkout(profile, days); aiOut.innerHTML = `<pre class="wk-ai-text">${escapeHtml(plan)}</pre>`; }
+    try { const plan = await generateWorkout(profile, days); store.useCredit("workout"); aiOut.innerHTML = `<pre class="wk-ai-text">${escapeHtml(plan)}</pre>`; }
     catch (e) { aiOut.innerHTML = `<p class="hist-note">No se pudo generar: ${escapeHtml(e.message)}</p>`; toast("Error generando la rutina"); }
     finally { aiBtn.disabled = false; aiBtn.innerHTML = `${icon('sparkles', 16)} Generar con IA`; }
   });

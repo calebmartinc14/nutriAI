@@ -64,6 +64,9 @@ const DICT = {
     "scan.confidence": "Confianza {n}%", "scan.saveDiary": "Guardar en mi diario", "scan.adjust": "Ajustar valores",
     "scan.retryPhoto": "Repetir foto", "scan.oops": "Ups", "scan.readError": "No se pudo leer la imagen",
     "scan.isMeal": "Es el {slot}",
+    "scan.limitTitle": "Límite diario alcanzado",
+    "scan.limitDesc": "Has agotado tus escaneos de hoy. Vuelve mañana o hazte Premium para escaneos ilimitados.",
+    "scan.getPremium": "💎 Hazte Premium — escaneos ilimitados",
 
     // Modal manual
     "manual.editTitle": "Editar comida", "manual.confirmTitle": "Confirmar comida", "manual.addTitle": "Añadir comida",
@@ -176,6 +179,9 @@ const DICT = {
     "scan.confidence": "Confidence {n}%", "scan.saveDiary": "Save to my diary", "scan.adjust": "Adjust values",
     "scan.retryPhoto": "Retake photo", "scan.oops": "Oops", "scan.readError": "Couldn't read the image",
     "scan.isMeal": "It's {slot}",
+    "scan.limitTitle": "Daily limit reached",
+    "scan.limitDesc": "You've used all your scans for today. Come back tomorrow or go Premium for unlimited scans.",
+    "scan.getPremium": "💎 Go Premium — unlimited scans",
 
     "manual.editTitle": "Edit meal", "manual.confirmTitle": "Confirm meal", "manual.addTitle": "Add meal",
     "manual.favorites": "Favorites", "manual.recents": "Recent",
@@ -282,6 +288,9 @@ const DICT = {
     "scan.confidence": "Confiance {n}%", "scan.saveDiary": "Enregistrer dans mon journal", "scan.adjust": "Ajuster les valeurs",
     "scan.retryPhoto": "Reprendre la photo", "scan.oops": "Oups", "scan.readError": "Impossible de lire l'image",
     "scan.isMeal": "C'est le {slot}",
+    "scan.limitTitle": "Limite quotidienne atteinte",
+    "scan.limitDesc": "Vous avez utilisé tous vos scans aujourd'hui. Revenez demain ou passez Premium pour des scans illimités.",
+    "scan.getPremium": "💎 Passer Premium — scans illimités",
 
     "manual.editTitle": "Modifier le repas", "manual.confirmTitle": "Confirmer le repas", "manual.addTitle": "Ajouter un repas",
     "manual.favorites": "Favoris", "manual.recents": "Récents",

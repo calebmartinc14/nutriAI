@@ -84,6 +84,8 @@ function saveRoutines(s) {
   emit("profile", "upsert", profileRow(s));
 }
 
+const CREDIT_LIMITS = { scan: 2, coach: 5, workout: 2 };
+
 function getState() {
   const s = load();
   return {
@@ -104,6 +106,8 @@ function getState() {
     profile: s.profile ?? null,
     onboarded: s.onboarded ?? false,
     username: s.username ?? null,
+    isPremium: s.isPremium ?? false,
+    dailyUsage: s.dailyUsage ?? {},
   };
 }
 
@@ -773,6 +777,38 @@ export const store = {
 
   todayIndex() {
     return (new Date().getDay() + 6) % 7;
+  },
+
+  // ---- Creditos / Límites diarios ----
+  isPremium() {
+    return getState().isPremium;
+  },
+
+  setPremium(v) {
+    const s = getState();
+    s.isPremium = !!v;
+    save(s);
+  },
+
+  remainingCredits(action) {
+    if (getState().isPremium) return Infinity;
+    const today = todayKey();
+    const usage = getState().dailyUsage;
+    const used = usage[today]?.[action] ?? 0;
+    return Math.max(0, (CREDIT_LIMITS[action] ?? 0) - used);
+  },
+
+  canUse(action) {
+    return this.remainingCredits(action) > 0;
+  },
+
+  useCredit(action) {
+    if (getState().isPremium) return;
+    const s = getState();
+    const today = todayKey();
+    if (!s.dailyUsage[today]) s.dailyUsage[today] = {};
+    s.dailyUsage[today][action] = (s.dailyUsage[today][action] ?? 0) + 1;
+    save(s);
   },
 };
 
