@@ -26,7 +26,7 @@ function pickerView(slot) {
         ).join("")}
       </div>
 
-      <textarea id="scan-desc" class="scan-desc" rows="2" placeholder="${t("scan.descPlaceholder")}"></textarea>
+      <textarea id="scan-desc" class="scan-desc" placeholder="${t("scan.descPlaceholder")}"></textarea>
 
       <input id="file-camera" type="file" accept="image/*" capture="environment" class="hidden" />
       <input id="file-gallery" type="file" accept="image/*" class="hidden" />

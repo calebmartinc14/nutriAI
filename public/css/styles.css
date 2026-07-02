@@ -15,6 +15,24 @@
   --sidebar-w: 248px;
 }
 
+[data-theme="light"] {
+  --bg: #FDFBF7;
+  --surface: #F9F6F0;
+  --surface-2: #f0ebe0;
+  --stroke: #e2dcd0;
+  --text: #1a1c1e;
+  --text-2: #5b5f66;
+  --text-3: #8b9098;
+  --cal: #00c48c;
+  --protein: #4a7dd4;
+  --carbs: #e89a1a;
+  --fat: #e05555;
+  --track: #e2dcd0;
+}
+[data-theme="light"] .sidebar { background: #e8e0d0; }
+[data-theme="light"] .side-foot { border-top-color: var(--stroke); }
+[data-theme="light"] .nav-item.active { background: #d9d0be; }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 .icon { display: inline; vertical-align: middle; }
 
@@ -55,6 +73,8 @@ html, body {
 }
 .nav-item:hover { background: var(--surface); color: var(--text); }
 .nav-item.active { background: var(--surface-2); color: var(--cal); }
+.nav-item-danger { color: var(--fat) !important; }
+.nav-item-danger:hover { background: rgba(255, 107, 107, 0.1) !important; }
 .ni-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; }
 
 .side-foot { margin-top: auto; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px; padding-top: 12px; }
@@ -180,6 +200,10 @@ html, body {
 }
 .btn-primary { background: var(--cal); color: #06281f; }
 .btn-ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--stroke); }
+.btn-danger { background: var(--fat); color: #fff; border: 1px solid var(--fat); }
+.btn-danger:hover { filter: brightness(1.12); }
+.btn-ghost-danger { background: transparent; color: var(--fat); border: 1px solid var(--fat); }
+.btn-ghost-danger:hover { background: var(--fat); color: #fff; }
 .btn:active { transform: scale(0.98); }
 .btn-block { width: 100%; }
 .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
@@ -269,7 +293,6 @@ html, body {
 .wr-delta { font-size: 13px; font-weight: 600; min-width: 50px; text-align: right; }
 
 /* ====================== ENTRENO ====================== */
-.no-tag { color: var(--fat); font-weight: 600; margin-left: 6px; }
 
 .wk-controls { padding: 18px 22px; margin-bottom: 16px; }
 .wk-controls > label { display: block; font-size: 14px; color: var(--text-2); font-weight: 600; margin-bottom: 10px; }
@@ -318,6 +341,7 @@ html, body {
 .ranked-dot { color: var(--carbs); font-size: 12px; }
 .ex-remove { background: none; border: none; color: var(--text-3); cursor: pointer; font-size: 14px; padding: 2px 6px; }
 .ex-remove:hover { color: var(--fat); }
+.set-del:hover { color: #ff4444; }
 
 .wk-ex-log { margin-top: 10px; }
 .sets-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
@@ -386,6 +410,12 @@ html, body {
 .auth-or { text-align: center; color: var(--text-3); font-size: 12px; margin: 12px 0; }
 .auth-msg { text-align: center; font-size: 13px; margin-top: 12px; min-height: 18px; }
 .auth-card .btn { margin-top: 8px; }
+
+.btn-social { display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 600; }
+.btn-google { background: #fff; color: #1a1a1a; border: 1px solid #dadce0; }
+.btn-google:hover { background: #f8f9fa; filter: none; }
+.btn-apple { background: #000; color: #fff; border: 1px solid #000; }
+.btn-apple:hover { background: #1a1a1a; filter: none; }
 
 /* ====================== LIGA ====================== */
 .league-actions { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
@@ -579,7 +609,7 @@ html, body {
 .rec-detail-card { padding: 20px 22px; margin-top: 16px; }
 .rec-detail-head { display: flex; align-items: center; justify-content: space-between; font-size: 18px; margin-bottom: 14px; }
 .rec-pct-label { display: block; color: var(--text-2); font-size: 13px; margin-bottom: 6px; }
-.rec-range { width: 100%; accent-color: var(--cal); }
+.rec-range { width: 100%; accent-color: var(--cal); transition: all 0.05s linear; }
 .rec-target { color: var(--text-3); font-size: 13px; margin-top: 6px; }
 .rec-ings { display: flex; flex-direction: column; gap: 6px; }
 .rec-ing { display: flex; justify-content: space-between; background: var(--surface-2); border-radius: 10px; padding: 9px 12px; font-size: 14px; }
@@ -758,7 +788,7 @@ html, body {
 .meal-edit:hover { color: var(--cal); }
 
 /* Descripción en el escáner */
-.scan-desc { width: 100%; max-width: 420px; background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 12px; padding: 11px 14px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; resize: vertical; }
+.scan-desc { width: 100%; max-width: 420px; height: 72px; background: var(--surface-2); border: 1px solid var(--stroke); border-radius: 12px; padding: 11px 14px; color: var(--text); font-family: inherit; font-size: 14px; outline: none; resize: none; }
 .scan-desc:focus { border-color: var(--cal); }
 
 /* Creador de recetas propias */

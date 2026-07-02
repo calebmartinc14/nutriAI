@@ -103,6 +103,7 @@ function addSignOutButton() {
   const btn = document.createElement("button");
   btn.id = "signout";
   btn.className = "nav-item";
+  btn.classList.add("nav-item-danger");
   btn.innerHTML = `<span class="ni-ico">${icon('log-out', 20)}</span> <span class="ni-tx" data-i18n="nav.signout">Cerrar sesión</span>`;
   btn.addEventListener("click", signOut);
   foot.insertBefore(btn, foot.firstChild);
@@ -136,6 +137,10 @@ async function initApp() {
     store.setSyncHandler(cloud.push); // a partir de aquí, cada cambio se sube
     addSignOutButton();
   }
+
+  // Aplica el tema guardado
+  const theme = store.theme();
+  document.documentElement.setAttribute("data-theme", theme);
 
   applyI18n(document); // traduce el nav y textos marcados
   updateHeader();

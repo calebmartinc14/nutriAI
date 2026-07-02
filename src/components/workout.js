@@ -5,7 +5,6 @@ import { openExerciseExplorer } from "./exercises.js";
 import { escapeHtml, toast, showLimitModal } from "./ui.js";
 import { icon } from "../lib/icons.js";
 
-// Base de ejercicios. NO incluye sentadilla ni peso muerto.
 const MUSCLE = {
   "Press de banca con mancuernas": "Pecho",
   "Press inclinado con mancuernas": "Pecho superior",
@@ -38,9 +37,9 @@ const MUSCLE = {
 const TEMPLATES = {
   push: { A: ["Press de banca con mancuernas", "Press militar con mancuernas", "Press inclinado con mancuernas", "Elevaciones laterales", "Extensión de tríceps en polea"], B: ["Press de banca con mancuernas", "Press militar con mancuernas", "Aperturas en pec-deck", "Fondos en paralelas", "Press francés"], label: "Empuje (pecho · hombro · tríceps)" },
   pull: { A: ["Jalón al pecho", "Remo con mancuerna", "Face pull", "Curl con barra", "Curl martillo"], B: ["Jalón al pecho", "Pull-over en polea", "Remo en máquina", "Face pull", "Curl concentrado"], label: "Tirón (espalda · bíceps)" },
-  legs: { A: ["Prensa de piernas", "Hip thrust con barra", "Extensión de cuádriceps", "Curl femoral tumbado", "Elevación de gemelos"], B: ["Prensa de piernas", "Zancadas con mancuernas", "Hip thrust con barra", "Curl femoral sentado", "Elevación de gemelos"], label: "Pierna (sin sentadilla ni peso muerto)" },
+  legs: { A: ["Prensa de piernas", "Hip thrust con barra", "Extensión de cuádriceps", "Curl femoral tumbado", "Elevación de gemelos"], B: ["Prensa de piernas", "Zancadas con mancuernas", "Hip thrust con barra", "Curl femoral sentado", "Elevación de gemelos"], label: "Pierna" },
   upper: { A: ["Press de banca con mancuernas", "Jalón al pecho", "Press militar con mancuernas", "Remo con mancuerna", "Elevaciones laterales", "Curl con barra", "Extensión de tríceps en polea"], B: ["Press inclinado con mancuernas", "Remo en máquina", "Aperturas en pec-deck", "Face pull", "Elevaciones laterales", "Curl martillo", "Press francés"], label: "Torso (pecho · espalda · hombro · brazos)" },
-  lower: { A: ["Prensa de piernas", "Curl femoral tumbado", "Hip thrust con barra", "Zancadas con mancuernas", "Elevación de gemelos", "Plancha"], B: ["Prensa de piernas", "Extensión de cuádriceps", "Hip thrust con barra", "Zancadas con mancuernas", "Elevación de gemelos", "Crunch en polea"], label: "Pierna + core (sin sentadilla ni peso muerto)" },
+  lower: { A: ["Prensa de piernas", "Curl femoral tumbado", "Hip thrust con barra", "Zancadas con mancuernas", "Elevación de gemelos", "Plancha"], B: ["Prensa de piernas", "Extensión de cuádriceps", "Hip thrust con barra", "Zancadas con mancuernas", "Elevación de gemelos", "Crunch en polea"], label: "Pierna + core" },
   fullA: { A: ["Press de banca con mancuernas", "Jalón al pecho", "Prensa de piernas", "Elevaciones laterales", "Curl con barra", "Plancha"], label: "Cuerpo completo A" },
   fullB: { A: ["Press inclinado con mancuernas", "Remo con mancuerna", "Hip thrust con barra", "Extensión de tríceps en polea", "Curl martillo", "Elevación de gemelos"], label: "Cuerpo completo B" },
 };
@@ -110,10 +109,12 @@ function draw(root) {
     ${sc.cardio ? `<div class="card wk-cardio">${icon('run', 16)} <b>Cardio:</b> 15-25 min al final de cada sesi&oacute;n.</div>` : ""}
     <div class="card wk-warmup">${icon('flame', 16)} <b>Calentamiento:</b> 5-10 min de movilidad + 1-2 series ligeras del primer ejercicio.</div>`;
 
+  const activeRoutine = store.activeRoutine();
+
   root.innerHTML = `
     <div class="weight-head">
       <h2 class="page-title">Rutina de entrenamiento</h2>
-      <p class="page-sub">Para tu objetivo: <b>${GOAL_LABEL[profile?.goal] ?? "-"}</b>. <span class="no-tag">${icon('ban', 14)} Sin sentadillas ni peso muerto</span></p>
+      <p class="page-sub">Para tu objetivo: <b>${GOAL_LABEL[profile?.goal] ?? "-"}</b>${activeRoutine ? ` · Rutina activa: <b class="active-routine-name">${icon('zap', 14)} ${activeRoutine.name}</b>` : ""}</p>
     </div>
 
     <div class="wk-streak">
@@ -133,8 +134,8 @@ function draw(root) {
     ${hideDef ? "" : generated}
 
     <div class="section-title" style="margin-top:28px">Plan personalizado con IA ${icon('sparkles', 16)}</div>
-    <div class="card wk-ai-card">
-      <p>Genera una variaci&oacute;n a medida con IA (respeta no sentadilla ni peso muerto).</p>
+    <div class="card wk-ai-card" id="ai-card">
+      <p>Genera una variaci&oacute;n a medida con IA.</p>
       <button class="btn btn-primary" id="ai-btn">${icon('sparkles', 16)} Generar con IA</button>
       <div id="ai-out" class="wk-ai-out hidden"></div>
     </div>
@@ -152,9 +153,9 @@ function bind(root) {
     chip.addEventListener("click", () => { store.setTrainingDays(Number(chip.dataset.days)); draw(root); })
   );
 
-  // Marcar entreno hecho
+  // Marcar/desmarcar entreno hecho
   root.querySelectorAll("[data-done]").forEach((btn) =>
-    btn.addEventListener("click", () => { const a = store.logSession(btn.dataset.done); toast(a ? "Entreno registrado!" : "Ya estaba marcado hoy"); draw(root); })
+    btn.addEventListener("click", () => { store.toggleSession(btn.dataset.done); draw(root); })
   );
 
   // Abrir/cerrar panel de un ejercicio
@@ -211,6 +212,84 @@ function bind(root) {
       });
     })
   );
+
+  // --- Activar rutina ---
+  root.querySelectorAll("[data-setactive]").forEach((btn) =>
+    btn.addEventListener("click", () => { store.setActiveRoutine(btn.dataset.setactive); draw(root); toast("Rutina activa actualizada"); })
+  );
+
+  // --- Series en rutinas propias ---
+  root.querySelectorAll("[data-add-rs]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const [rid, did, eidx] = btn.dataset.addRs.split("|");
+      const wrap = btn.closest(".mr-ex-wrap");
+      const kg = Number(wrap?.querySelector(".mr-set-kg")?.value);
+      const reps = Number(wrap?.querySelector(".mr-set-reps")?.value);
+      if (!(kg > 0 && reps > 0)) return toast("kg y reps deben ser > 0");
+      store.addSetToRoutineExercise(rid, did, Number(eidx), kg, reps);
+      draw(root);
+    })
+  );
+
+  root.querySelectorAll("[data-rm-rs]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const [rid, did, eidx, sid] = btn.dataset.rmRs.split("|");
+      store.removeSetFromRoutineExercise(rid, did, Number(eidx), sid);
+      draw(root);
+    })
+  );
+
+  // --- Marcar/desmarcar hecho en rutinas propias ---
+  root.querySelectorAll("[data-rdone]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const label = btn.dataset.rdone;
+      if (label) { store.toggleSession(label); draw(root); }
+    })
+  );
+
+  // --- Historial de ejercicio (log exercise set) ---
+  root.querySelectorAll("[data-logex]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const ex = btn.dataset.logex;
+      const wrap = btn.closest(".mr-ex-wrap") || btn.closest(".wk-ex-wrap");
+      const kg = Number(wrap?.querySelector(".set-kg")?.value || wrap?.querySelector(".mr-set-kg")?.value);
+      const reps = Number(wrap?.querySelector(".set-reps")?.value || wrap?.querySelector(".mr-set-reps")?.value);
+      if (!(kg > 0 && reps > 0)) return toast("kg y reps deben ser > 0");
+      store.logExerciseSet(ex, kg, reps);
+      toast("Serie registrada en historial");
+      draw(root);
+    })
+  );
+
+  // --- IA: Event delegation para botones dinámicos ---
+  const aiCard = root.querySelector("#ai-card");
+  aiCard?.addEventListener("click", (e) => {
+    const btn = e.target.closest("button");
+    if (!btn) return;
+    if (btn.id === "ai-save-routine") {
+      const planText = root.querySelector("#ai-out-text")?.textContent || "";
+      if (!planText) return;
+      const name = "Plan IA " + new Date().toLocaleDateString();
+      store.addRoutine(name);
+      const routines = store.customRoutines();
+      const last = routines[routines.length - 1];
+      if (last) store.setActiveRoutine(last.id);
+      toast("Rutina guardada y activada");
+      draw(root);
+    } else if (btn.id === "ai-discard") {
+      const aiOut = root.querySelector("#ai-out");
+      aiOut.classList.add("hidden");
+      aiOut.innerHTML = "";
+      const aiBtn = root.querySelector("#ai-btn");
+      if (aiBtn) { aiBtn.disabled = false; aiBtn.innerHTML = `${icon('sparkles', 16)} Generar con IA`; }
+    } else if (btn.id === "ai-regenerate") {
+      const aiBtn = root.querySelector("#ai-btn");
+      if (aiBtn) aiBtn.click();
+    }
+  });
+
+  // --- Ciclo de reset automático (cambio de semana) ---
+  tryAutoReset();
 
   // --- Mis rutinas (por días) ---
   root.querySelector("#create-routine")?.addEventListener("click", () => {
@@ -339,7 +418,18 @@ function bind(root) {
     }
     aiBtn.disabled = true; aiBtn.textContent = "Generando...";
     aiOut.classList.remove("hidden"); aiOut.innerHTML = `<div class="spinner" style="margin:16px auto"></div>`;
-    try { const plan = await generateWorkout(profile, days); store.useCredit("workout"); aiOut.innerHTML = `<pre class="wk-ai-text">${escapeHtml(plan)}</pre>`; }
+    try {
+      const plan = await generateWorkout(profile, days);
+      store.useCredit("workout");
+      const cleanPlan = new DOMParser().parseFromString(plan, "text/html").body.textContent || plan;
+      aiOut.innerHTML = `
+        <pre class="wk-ai-text" id="ai-out-text">${escapeHtml(cleanPlan)}</pre>
+        <div class="ai-actions">
+          <button class="btn btn-primary" id="ai-save-routine">${icon('check', 14)} A&ntilde;adir como rutina</button>
+          <button class="btn btn-ghost" id="ai-regenerate">${icon('sparkles', 14)} Generar otra rutina</button>
+          <button class="btn btn-ghost-danger" id="ai-discard">${icon('x', 14)} Descartar</button>
+        </div>`;
+    }
     catch (e) { aiOut.innerHTML = `<p class="hist-note">No se pudo generar: ${escapeHtml(e.message)}</p>`; toast("Error generando la rutina"); }
     finally { aiBtn.disabled = false; aiBtn.innerHTML = `${icon('sparkles', 16)} Generar con IA`; }
   });
@@ -366,6 +456,34 @@ function bind(root) {
       draw(root);
     })
   );
+}
+
+// Reset automático de sesiones al cambiar de semana.
+function tryAutoReset() {
+  const now = new Date();
+  const dayOfWeek = (now.getDay() + 6) % 7; // 0=Lun...6=Dom
+  // Si es domingo (6) después de las 20:00, resetear las sesiones de la semana pasada
+  if (dayOfWeek === 6 && now.getHours() >= 20) {
+    const sessions = store.sessions();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - dayOfWeek);
+    const mondayKey = todayKey(monday);
+    const oldSessions = sessions.filter(s => s.date < mondayKey);
+    if (oldSessions.length > 0) {
+      oldSessions.forEach(s => store.unlogSession(s.focus, s.date));
+    }
+  }
+  // Si todos los días de la rutina activa están completados, resetear todo
+  const activeRoutine = store.activeRoutine();
+  if (activeRoutine) {
+    const allDone = activeRoutine.days.every(d => store.hasSessionToday(d.label || `Día ${activeRoutine.days.indexOf(d) + 1}`));
+    if (allDone && activeRoutine.days.length > 0) {
+      activeRoutine.days.forEach(d => {
+        const focus = d.label || `Día ${activeRoutine.days.indexOf(d) + 1}`;
+        store.unlogSession(focus);
+      });
+    }
+  }
 }
 
 function dayCard(n, focus, variant, sc) {
@@ -435,9 +553,25 @@ function miniStat(iconName, value, label) {
 
 function myRoutinesSection() {
   const routines = store.customRoutines();
+  const listHtml = routines.length
+    ? `<div class="my-routines-list">${routines.map((r) => `
+      <div class="card mr-index-row ${r.isActive ? 'mr-active' : ''}">
+        <div class="mr-index-info">
+          <span class="mr-index-name">${icon('dumbbell', 14)} ${escapeHtml(r.name)}</span>
+          <span class="mr-index-meta">${r.days.length} d&iacute;a(s) ${r.isActive ? '· <span class="mr-active-badge">Activa</span>' : ''}</span>
+        </div>
+        <div class="mr-index-actions">
+          ${r.isActive ? '' : `<button class="wk-toggle-def" data-setactive="${r.id}">${icon('play', 12)} Activar</button>`}
+          <button class="btn-ghost-danger" style="padding:4px 8px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit" data-delroutine="${r.id}" title="Borrar rutina">${icon('trash-2', 12)} Borrar</button>
+        </div>
+      </div>`).join("")}</div>`
+    : `<p class="hist-note">Aun no tienes rutinas propias. Crea una y organizala por dias.</p>`;
   return `
     <div class="section-title" style="margin-top:8px">Mis rutinas</div>
-    ${routines.length ? `<div class="my-routines">${routines.map(routineCard).join("")}</div>` : `<p class="hist-note">Aun no tienes rutinas propias. Crea una y organizala por dias.</p>`}
+    ${listHtml}
+    <div class="my-routines">
+      ${routines.map(routineCard).join("")}
+    </div>
     <div class="wk-newroutine">
       <input id="new-routine-name" type="text" placeholder="Nombre (ej. Push Pull Legs)" />
       <button class="btn btn-primary" id="create-routine">${icon('plus', 14)} Crear rutina</button>
@@ -447,7 +581,7 @@ function myRoutinesSection() {
 function routineCard(r) {
   const isActive = r.id === activeRoutineId;
   return `
-    <div class="card my-routine">
+    <div class="card my-routine ${active ? 'mr-active' : ''}">
       <div class="mr-head">
         <input class="mr-name" type="text" value="${attr(r.name)}" data-routinename="${r.id}" ${isActive ? 'disabled' : ''} />
         ${isActive ? '' : `<button class="ex-remove" data-delroutine="${r.id}" title="Borrar rutina">${icon('trash-2', 14)}</button>`}
@@ -465,17 +599,20 @@ function routineDay(rid, d, n) {
   const wdChips = daysLabel.map((label, wd) =>
     `<span class="mr-wd-chip ${d.weekdays?.includes(wd) ? 'active' : ''}" data-daywd="${rid}|${d.id}|${wd}">${label}</span>`
   ).join('');
+  const dayFocus = d.label || `Día ${n}`;
+  const done = store.hasSessionToday(dayFocus);
   return `
     <div class="mr-day">
       <div class="mr-day-head">
         <span class="mr-day-n">Día ${n}</span>
         <input class="mr-day-label" type="text" placeholder="Músculo / zona (ej. Pecho y tríceps)" value="${attr(d.label || "")}" data-daylabel="${rid}|${d.id}" />
+        <button class="wk-done-btn ${done ? "done" : ""}" data-rdone="${attr(dayFocus)}">${done ? `${icon('check', 12)} Hecho` : "Marcar hecho"}</button>
         <button class="set-del" data-delday="${rid}|${d.id}" title="Borrar d&iacute;a">${icon('x', 12)}</button>
       </div>
       <div class="mr-wd-row">${wdChips}</div>
       <div class="mr-exs">
         ${d.exercises.length
-          ? d.exercises.map((e, i) => `<div class="mr-ex"><span>${escapeHtml(e.name)}${e.muscle ? ` - <span class="mr-ex-m">${escapeHtml(e.muscle)}</span>` : ""}</span><button class="set-del" data-rmrex="${rid}|${d.id}|${i}" title="Quitar">${icon('x', 12)}</button></div>`).join("")
+          ? d.exercises.map((e, i) => routineExerciseRow(rid, d.id, e, i)).join("")
           : `<div class="meal-empty" style="padding-left:0">Sin ejercicios este día</div>`}
       </div>
       <button class="wk-add-ex wk-add-small" data-addtoday="${rid}|${d.id}">${icon('book-open', 14)} Base de datos</button>

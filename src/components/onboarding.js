@@ -41,6 +41,13 @@ export function openOnboarding({ isEdit = false, onDone } = {}) {
 
         ${isEdit ? `
         <div class="field">
+          <label>Tema</label>
+          <div class="chip-group" data-group="theme">
+            <div class="chip ${store.theme() === "dark" ? "active" : ""}" data-theme-val="dark"><span class="chip-label">${icon('moon', 14)} Oscuro</span></div>
+            <div class="chip ${store.theme() === "light" ? "active" : ""}" data-theme-val="light"><span class="chip-label">${icon('sun', 14)} Claro</span></div>
+          </div>
+        </div>
+        <div class="field">
           <label>${t("common.language")}</label>
           <div class="chip-group" data-group="lang">
             ${LANGS.map((l) => `<div class="chip ${getLang() === l.id ? "active" : ""}" data-lang="${l.id}"><span class="chip-label">${l.label}</span></div>`).join("")}
@@ -100,6 +107,13 @@ export function openOnboarding({ isEdit = false, onDone } = {}) {
             // Cambia el idioma al instante (sin recargar).
             setLang(chip.dataset.lang);
             window.dispatchEvent(new Event("nutveo-lang"));
+            return;
+          }
+          if (key === "theme") {
+            const t = chip.dataset.themeVal;
+            store.setTheme(t);
+            document.documentElement.setAttribute("data-theme", t);
+            window.dispatchEvent(new Event("nutveo-theme"));
             return;
           }
           sel[key] = chip.dataset.val;
