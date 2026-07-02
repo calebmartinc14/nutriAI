@@ -1,5 +1,5 @@
 import { store } from "./store.js";
-import { getStatus } from "./api.js";
+import { getStatus, confirmPremium } from "./api.js";
 import { CLOUD_ENABLED, getCurrentUser, renderLogin, signOut } from "./auth.js";
 import { renderLanding } from "./components/landing.js";
 import { t, applyI18n, getLocale } from "./lib/i18n.js";
@@ -164,15 +164,10 @@ window.addEventListener("nutveo-lang", () => {
   const params = new URLSearchParams(window.location.search);
   if (params.get("premium") === "success" && params.get("checkout_id")) {
     const id = params.get("checkout_id");
-    try {
-      const res = await fetch(`/api/confirm-premium?checkout_id=${id}`);
-      const data = await res.json();
-      if (data.paid) {
-        store.setPremium(true);
-        toast("\u{1F389} \u{A1}Pago confirmado! Ya eres Premium.");
-      }
-    } catch (e) {
-      console.warn("Error confirmando premium:", e);
+    const paid = await confirmPremium(id).catch(() => false);
+    if (paid) {
+      store.setPremium(true);
+      toast("\u{1F389} \u{A1}Pago confirmado! Ya eres Premium.");
     }
     history.replaceState(null, "", "/");
   }

@@ -11,10 +11,16 @@ create table if not exists profiles (
   activity text, goal text, training_days int default 3,
   goals jsonb, onboarded boolean default false,
   routine jsonb, -- personalizacion de la rutina (ejercicios propios/ocultos)
+  is_premium boolean default false,
+  premium_since timestamptz,
+  checkout_id text,
   updated_at timestamptz default now()
 );
--- Si ya creaste la tabla antes, ejecuta esta linea para anadir la columna:
+-- Si ya creaste la tabla antes, ejecuta estas lineas para anadir las columnas:
 alter table profiles add column if not exists routine jsonb;
+alter table profiles add column if not exists is_premium boolean default false;
+alter table profiles add column if not exists premium_since timestamptz;
+alter table profiles add column if not exists checkout_id text;
 
 -- ---------- COMIDAS ----------
 create table if not exists meals (

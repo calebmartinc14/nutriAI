@@ -814,6 +814,7 @@ export const store = {
       onboarded: data.onboarded ?? false,
       username: data.username ?? null,
       theme: data.theme ?? "dark",
+      isPremium: data.isPremium ?? false,
     });
   },
 
