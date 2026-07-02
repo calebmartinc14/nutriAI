@@ -93,8 +93,6 @@ const A = {
   queso: { kcal: 350, p: 25, c: 1.3, f: 28 },
 };
 
-const RECIPE_ICONS = { r1: "utensils", r2: "award", r3: "sunrise", r4: "utensils", r5: "sun" };
-
 export const RECIPES = [
   {
     id: "r1", titulo: "Bowl de pollo y arroz", comida: "almuerzo", icon: "utensils",

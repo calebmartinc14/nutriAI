@@ -3,7 +3,6 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import "dotenv/config";
 import helmet from "helmet";
-import cors from "cors";
 import rateLimit from "express-rate-limit";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -13,7 +12,6 @@ import { existsSync } from "node:fs";
 const app = express();
 
 app.use(helmet({ contentSecurityPolicy: false }));
-app.use(cors());
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,

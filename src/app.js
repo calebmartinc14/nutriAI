@@ -16,8 +16,9 @@ import { renderLeague } from "./components/league.js";
 import { renderProducts } from "./components/products.js";
 import { renderRecipes } from "./components/recipes.js";
 import { renderProgress } from "./components/progress.js";
+import { renderPricing } from "./components/pricing.js";
 import { openOnboarding } from "./components/onboarding.js";
-import { toast } from "./components/ui.js";
+
 
 const viewEl = document.getElementById("view");
 const navItems = document.querySelectorAll(".nav-item[data-view]");
@@ -63,6 +64,7 @@ function renderCurrent(ctx) {
   else if (current === "products") renderProducts(viewEl, ctx);
   else if (current === "recipes") renderRecipes(viewEl, ctx);
   else if (current === "coach") renderCoach(viewEl, ctx);
+  else if (current === "pricing") renderPricing(viewEl, ctx);
 }
 
 function updateHeader() {
