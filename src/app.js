@@ -143,4 +143,8 @@ window.addEventListener("nutveo-lang", () => {
   refresh();
 });
 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/sw.js");
+}
+
 initApp();
