@@ -78,11 +78,12 @@ async function updateAiBadge() {
   if (status.demo) {
     badge.className = "badge badge-muted";
     badge.innerHTML = `${icon('flask', 14)} Demo`;
-    badge.title = "Sin clave de Gemini: se usan datos simulados";
+    badge.title = "Sin API key: se usan datos simulados";
   } else {
     badge.className = "badge badge-credits";
     badge.innerHTML = `${icon('bot', 14)} IA`;
-    badge.title = `IA real activa (${status.model})`;
+    const label = status.provider === "openrouter" ? "OpenRouter" : "Gemini";
+    badge.title = `IA real · ${label} (${status.model})`;
   }
 }
 
