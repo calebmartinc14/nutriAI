@@ -29,6 +29,7 @@ export async function pullAll(user) {
     profile: p
       ? { sex: p.sex, age: p.age, height: p.height, weight: p.weight, activity: p.activity, goal: p.goal }
       : null,
+    isPremium: p?.is_premium ?? false,
     goals: p?.goals ?? undefined,
     trainingDays: p?.training_days ?? 3,
     onboarded: p?.onboarded ?? false,

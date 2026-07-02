@@ -1,6 +1,7 @@
 import { store } from "../store.js";
 import { icon } from "../lib/icons.js";
 import { toast } from "./ui.js";
+import { createPremiumCheckout } from "../api.js";
 
 export function renderPricing(root, { navigate }) {
   let isPremium = store.isPremium();
@@ -88,8 +89,7 @@ function bind(root, { navigate }) {
     btn.textContent = "Redirigiendo...";
 
     try {
-      const res = await fetch("/api/create-premium-checkout", { method: "POST" });
-      const data = await res.json();
+      const data = await createPremiumCheckout();
 
       if (data.url) {
         window.location.href = data.url;
@@ -106,7 +106,7 @@ function bind(root, { navigate }) {
       console.warn("LS checkout falló, modo local:", e);
     }
 
-    // fallback: si no hay servidor o falla, activa premium local
+    // fallback: activa premium local (para desarrollo sin LS)
     store.setPremium(true);
     toast("\u{1F389} \u{A1}Ya eres Premium! Todos los l\u00EDmites eliminados.");
     navigate("pricing");

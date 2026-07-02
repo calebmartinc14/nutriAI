@@ -744,6 +744,7 @@ export const store = {
       profile: data.profile ?? null,
       onboarded: data.onboarded ?? false,
       username: data.username ?? null,
+      isPremium: data.isPremium ?? false,
     });
   },
 

@@ -109,3 +109,47 @@ export async function estimateFood(food, grams) {
   const data = await callAI("estimate-food", { food, grams });
   return data.macros;
 }
+
+// ---- Premium / Lemon Squeezy ----
+
+const LS_EDGE_URL = `${SUPABASE_URL}/functions/v1/ls`;
+
+export async function createPremiumCheckout() {
+  if (CLOUD_ENABLED) {
+    const token = await getAccessToken();
+    const res = await fetch(`${LS_EDGE_URL}?action=create-checkout`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token ?? SUPABASE_ANON_KEY}`,
+      },
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+    return data;
+  }
+
+  const res = await fetch("/api/create-premium-checkout", { method: "POST" });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  return data;
+}
+
+export async function confirmPremium(checkoutId) {
+  if (CLOUD_ENABLED) {
+    const token = await getAccessToken();
+    const res = await fetch(`${LS_EDGE_URL}?action=confirm&checkout_id=${checkoutId}`, {
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${token ?? SUPABASE_ANON_KEY}`,
+      },
+    });
+    const data = await res.json();
+    return data.paid === true;
+  }
+
+  const res = await fetch(`/api/confirm-premium?checkout_id=${checkoutId}`);
+  const data = await res.json();
+  return data.paid === true;
+}
