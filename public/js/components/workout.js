@@ -1,4 +1,4 @@
-import { store, parseLocalDate } from "../store.js";
+import { store, parseLocalDate, todayKey } from "../store.js";
 import { generateWorkout } from "../api.js";
 import { isRanked } from "../lib/ranking.js";
 import { openExerciseExplorer } from "./exercises.js";
@@ -63,6 +63,11 @@ function scheme(goal) {
 }
 
 const GOAL_LABEL = { lose: "Perder grasa", maintain: "Mantener", gain: "Ganar músculo" };
+
+// Estado del calendario de entrenos (persiste entre re-renders).
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let selDate = null;
 
 // Construye la lista de ejercicios de un día: por defecto (menos ocultos) + propios.
 function dayExercises(focus, variant) {
@@ -241,6 +246,37 @@ function bind(root) {
       draw(root);
     })
   );
+  // Asignar día de la semana a un día de rutina (chips L M X J V S D).
+  root.querySelectorAll("[data-daywd]").forEach((el) =>
+    el.addEventListener("click", () => {
+      const [rid, did, wd] = el.dataset.daywd.split("|");
+      store.toggleRoutineDayWeekday(rid, did, Number(wd));
+      draw(root);
+    })
+  );
+
+  // Abrir formulario manual para añadir ejercicio a un día de rutina.
+  root.querySelectorAll("[data-addform-day]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const wrap = btn.closest(".mr-day");
+      wrap.querySelector(".mr-addpanel")?.classList.toggle("hidden");
+    })
+  );
+
+  // Guardar ejercicio manual en un día de rutina.
+  root.querySelectorAll("[data-saverex]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      const [rid, did] = btn.dataset.saverex.split("|");
+      const wrap = btn.closest(".mr-day");
+      const name = wrap.querySelector(".mr-add-name").value.trim();
+      const muscle = wrap.querySelector(".mr-add-muscle").value.trim();
+      if (!name) return toast("Pon el nombre del ejercicio");
+      store.addExerciseToRoutineDay(rid, did, name, muscle);
+      toast("Ejercicio añadido");
+      draw(root);
+    })
+  );
+
   // Ocultar/mostrar rutina sugerida
   root.querySelector("#toggle-def")?.addEventListener("click", () => {
     store.setHideDefaultRoutine(!store.hideDefaultRoutine());
@@ -270,6 +306,29 @@ function bind(root) {
     catch (e) { aiOut.innerHTML = `<p class="hist-note">No se pudo generar: ${esc(e.message)}</p>`; toast("Error generando la rutina"); }
     finally { aiBtn.disabled = false; aiBtn.innerHTML = `${icon('sparkles', 16)} Generar con IA`; }
   });
+
+  // Navegación del calendario (mes anterior/siguiente).
+  root.querySelectorAll("[data-calnav]").forEach((btn) =>
+    btn.addEventListener("click", () => {
+      if (btn.dataset.calnav === "prev") {
+        calMonth--;
+        if (calMonth < 0) { calMonth = 11; calYear--; }
+      } else {
+        calMonth++;
+        if (calMonth > 11) { calMonth = 0; calYear++; }
+      }
+      selDate = null;
+      draw(root);
+    })
+  );
+
+  // Seleccionar día del calendario.
+  root.querySelectorAll("[data-caldate]").forEach((el) =>
+    el.addEventListener("click", () => {
+      selDate = el.dataset.caldate;
+      draw(root);
+    })
+  );
 }
 
 function dayCard(n, focus, variant, sc) {
@@ -361,6 +420,10 @@ function routineCard(r) {
 }
 
 function routineDay(rid, d, n) {
+  const daysLabel = ['L','M','X','J','V','S','D'];
+  const wdChips = daysLabel.map((label, wd) =>
+    `<span class="mr-wd-chip ${d.weekdays?.includes(wd) ? 'active' : ''}" data-daywd="${rid}|${d.id}|${wd}">${label}</span>`
+  ).join('');
   return `
     <div class="mr-day">
       <div class="mr-day-head">
@@ -368,53 +431,146 @@ function routineDay(rid, d, n) {
         <input class="mr-day-label" type="text" placeholder="Músculo / zona (ej. Pecho y tríceps)" value="${attr(d.label || "")}" data-daylabel="${rid}|${d.id}" />
         <button class="set-del" data-delday="${rid}|${d.id}" title="Borrar d&iacute;a">${icon('x', 12)}</button>
       </div>
+      <div class="mr-wd-row">${wdChips}</div>
       <div class="mr-exs">
         ${d.exercises.length
           ? d.exercises.map((e, i) => `<div class="mr-ex"><span>${esc(e.name)}${e.muscle ? ` - <span class="mr-ex-m">${esc(e.muscle)}</span>` : ""}</span><button class="set-del" data-rmrex="${rid}|${d.id}|${i}" title="Quitar">${icon('x', 12)}</button></div>`).join("")
           : `<div class="meal-empty" style="padding-left:0">Sin ejercicios este día</div>`}
       </div>
-      <button class="wk-add-ex wk-add-small" data-addtoday="${rid}|${d.id}">${icon('book-open', 14)} A&ntilde;adir ejercicio</button>
+      <button class="wk-add-ex wk-add-small" data-addtoday="${rid}|${d.id}">${icon('book-open', 14)} Base de datos</button>
+      <button class="wk-add-ex wk-add-small" data-addform-day="${rid}|${d.id}">${icon('pencil', 14)} Manual</button>
+      <div class="mr-addpanel hidden">
+        <input class="mr-add-name" type="text" placeholder="Nombre del ejercicio" />
+        <input class="mr-add-muscle" type="text" placeholder="Músculo (opcional)" />
+        <button class="btn btn-primary" data-saverex="${rid}|${d.id}">Añadir</button>
+      </div>
     </div>`;
 }
 
-// Historial de entrenos por día (esta semana / semana pasada / anteriores).
+// Calendario de entrenos (reemplaza el historial plano).
 function workoutHistorySection() {
   const lifts = store.lifts();
-  if (!lifts.length) return `<div class="section-title" style="margin-top:28px">Historial de entrenos</div><p class="hist-note">Aún no has registrado series. Regístralas en la rutina y aparecerán aquí por día.</p>`;
+  const sessions = store.sessions();
+  const routines = store.customRoutines();
 
-  // Agrupa por fecha -> ejercicios -> series
-  const byDate = {};
-  for (const l of lifts) {
-    (byDate[l.date] = byDate[l.date] || {});
-    (byDate[l.date][l.exercise] = byDate[l.date][l.exercise] || []).push(`${l.kg}×${l.reps}`);
-  }
-  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
-
-  const mondayOffset = (dt) => { const x = new Date(dt); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
-  const thisMon = mondayOffset(new Date());
-  const lastMon = new Date(thisMon); lastMon.setDate(thisMon.getDate() - 7);
-
-  const groups = { "Esta semana": [], "Semana pasada": [], "Anteriores": [] };
-  for (const date of dates) {
-    const d = parseLocalDate(date);
-    if (d >= thisMon) groups["Esta semana"].push(date);
-    else if (d >= lastMon) groups["Semana pasada"].push(date);
-    else groups["Anteriores"].push(date);
+  // Si no hay datos de entreno, muestra mensaje.
+  if (!lifts.length && !sessions.length) {
+    return `<div class="section-title" style="margin-top:28px">Calendario de entrenos</div><p class="hist-note">Aún no has registrado series. Al registrar entrenos aparecerán aquí en el calendario.</p>`;
   }
 
-  const fmt = (key) => new Intl.DateTimeFormat("es", { weekday: "long", day: "numeric", month: "short" }).format(parseLocalDate(key));
-  const dayBlock = (date) => `
-    <div class="card wh-day">
-      <div class="wh-date">${cap(fmt(date))}</div>
-      ${Object.entries(byDate[date]).map(([ex, sets]) => `<div class="wh-ex"><span class="wh-ex-name">${esc(ex)}</span><span class="wh-ex-sets">${sets.join(", ")}</span></div>`).join("")}
-    </div>`;
+  const firstDay = new Date(calYear, calMonth, 1);
+  const lastDay = new Date(calYear, calMonth + 1, 0);
+  const today = todayKey();
+
+  // Fechas con al menos un entreno (lifts o sesión).
+  const trainedDates = new Set();
+  for (const l of lifts) trainedDates.add(l.date);
+  for (const s of sessions) trainedDates.add(s.date);
+
+  // Días programados según weekdays de las rutinas.
+  const scheduled = {};
+  const cursor = new Date(firstDay);
+  while (cursor <= lastDay) {
+    const wd = (cursor.getDay() + 6) % 7;
+    const key = todayKey(cursor);
+    const entries = [];
+    for (const r of routines) {
+      for (const d of r.days) {
+        if (d.weekdays?.includes(wd)) {
+          entries.push({ routineName: r.name, dayLabel: d.label });
+        }
+      }
+    }
+    if (entries.length) scheduled[key] = entries;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+
+  // Cabecera del mes.
+  const monthNames = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  const monthLabel = `${monthNames[calMonth]} ${calYear}`;
+
+  // Celdas del calendario.
+  const startWD = (firstDay.getDay() + 6) % 7; // 0=Lun
+  const totalDays = lastDay.getDate();
+  let cells = '';
+
+  for (let i = 0; i < startWD; i++) {
+    cells += `<div class="cal-cell cal-empty"></div>`;
+  }
+
+  for (let day = 1; day <= totalDays; day++) {
+    const date = new Date(calYear, calMonth, day);
+    const key = todayKey(date);
+    const isToday = key === today;
+    const isSelected = key === selDate;
+    const isTrained = trainedDates.has(key);
+    const isScheduled = !!scheduled[key];
+
+    let cls = 'cal-cell';
+    if (isToday) cls += ' cal-today';
+    if (isSelected) cls += ' cal-selected';
+    if (isTrained) cls += ' cal-trained';
+    if (!isTrained && isScheduled) cls += ' cal-scheduled';
+
+    cells += `<div class="${cls}" data-caldate="${key}">${day}</div>`;
+  }
+
+  // Rellena la última fila para que quede cuadrada.
+  const remainder = (startWD + totalDays) % 7;
+  if (remainder > 0) {
+    for (let i = 0; i < 7 - remainder; i++) {
+      cells += `<div class="cal-cell cal-empty"></div>`;
+    }
+  }
+
+  // Detalle del día seleccionado.
+  let detail = '';
+  if (selDate) {
+    const d = parseLocalDate(selDate);
+    const fmt = new Intl.DateTimeFormat("es", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(d);
+    const dayLifts = lifts.filter(l => l.date === selDate);
+    const daySessions = sessions.filter(s => s.date === selDate);
+
+    detail = `<div class="card cal-detail"><div class="cal-detail-date">${cap(fmt)}</div>`;
+
+    if (daySessions.length || dayLifts.length) {
+      if (daySessions.length) {
+        detail += `<div class="cal-detail-sesiones"><span class="cal-detail-label">Sesiones:</span> ${daySessions.map(s => esc(s.focus)).join(', ')}</div>`;
+      }
+      if (dayLifts.length) {
+        const byEx = {};
+        for (const l of dayLifts) {
+          (byEx[l.exercise] = byEx[l.exercise] || []).push(`${l.kg}×${l.reps}`);
+        }
+        detail += `<div class="cal-detail-ejercicios">`;
+        for (const [ex, sets] of Object.entries(byEx)) {
+          detail += `<div class="wh-ex"><span class="wh-ex-name">${esc(ex)}</span><span class="wh-ex-sets">${sets.join(", ")}</span></div>`;
+        }
+        detail += `</div>`;
+      }
+    } else if (scheduled[selDate]?.length) {
+      detail += `<p class="hist-note">No entrenaste este día. Tocaba: ${scheduled[selDate].map(s => `${esc(s.routineName)}: ${esc(s.dayLabel || 'Día sin etiqueta')}`).join(', ')}.</p>`;
+    } else {
+      detail += `<p class="hist-note">No hubo entreno este día ni estaba programado.</p>`;
+    }
+    detail += `</div>`;
+  }
 
   return `
-    <div class="section-title" style="margin-top:28px">Historial de entrenos</div>
-    ${Object.entries(groups).filter(([, ds]) => ds.length).map(([title, ds]) => `
-      <div class="wh-group-title">${title}</div>
-      ${ds.slice(0, title === "Anteriores" ? 10 : 99).map(dayBlock).join("")}
-    `).join("")}`;
+    <div class="section-title" style="margin-top:28px">Calendario de entrenos</div>
+    <div class="card cal-card">
+      <div class="cal-nav">
+        <button class="hist-nav" data-calnav="prev">${icon('arrow-left', 18)}</button>
+        <span class="cal-nav-label">${monthLabel}</span>
+        <button class="hist-nav" data-calnav="next">${icon('arrow-right', 18)}</button>
+      </div>
+      <div class="cal-grid">
+        <div class="cal-wd">L</div><div class="cal-wd">M</div><div class="cal-wd">X</div><div class="cal-wd">J</div><div class="cal-wd">V</div><div class="cal-wd">S</div><div class="cal-wd">D</div>
+        ${cells}
+      </div>
+      <div class="cal-legend"><span class="cal-legend-dot cal-dot-trained"></span> Entrenado <span class="cal-legend-dot cal-dot-scheduled" style="margin-left:14px"></span> Programado</div>
+    </div>
+    ${detail}`;
 }
 
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "");
